@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Card Print Prep</title>
+<style>
+  :root{
+    --ink:#14161a;
+    --panel:#1c1f24;
+    --panel-line:#2b2f36;
+    --paper:#fafaf7;
+    --paper-line:#d8d5cc;
+    --accent:#d6432b;
+    --accent-dim:#7a2c20;
+    --ok:#4b9d6e;
+    --text:#e9e9e6;
+    --text-dim:#9096a0;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--ink); color:var(--text);
+    font-family:var(--sans); line-height:1.4;
+  }
+  header{
+    padding:28px 24px 18px; border-bottom:1px solid var(--panel-line);
+  }
+  header h1{
+    margin:0 0 4px; font-size:22px; letter-spacing:.2px; font-weight:700;
+  }
+  header p{
+    margin:0; color:var(--text-dim); font-size:14px; max-width:640px;
+  }
+  footer{ text-align:center; padding:24px; font-family:var(--mono); font-size:11px; color:var(--text-dim); }
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--accent); margin-bottom:8px; display:block;
+  }
+  main{
+    max-width:1080px; margin:0 auto; padding:24px;
+  }
+  .grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:20px;
+  }
+  @media (max-width: 820px){ .grid{ grid-template-columns:1fr; } }
+
+  .card-panel{
+    background:var(--panel); border:1px solid var(--panel-line); border-radius:4px;
+    position:relative; padding:18px;
+  }
+  /* signature: registration-mark corner brackets on each panel, echoing print crop marks */
+  .card-panel::before, .card-panel::after,
+  .card-panel .br-tr, .card-panel .br-bl{
+    content:""; position:absolute; width:14px; height:14px; pointer-events:none;
+  }
+  .card-panel::before{ top:-1px; left:-1px; border-top:2px solid var(--accent); border-left:2px solid var(--accent); }
+  .card-panel::after{ bottom:-1px; right:-1px; border-bottom:2px solid var(--accent); border-right:2px solid var(--accent); }
+  .card-panel .br-tr{ top:-1px; right:-1px; border-top:2px solid var(--accent); border-right:2px solid var(--accent); }
+  .card-panel .br-bl{ bottom:-1px; left:-1px; border-bottom:2px solid var(--accent); border-left:2px solid var(--accent); }
+
+  .panel-title{
+    font-family:var(--mono); font-size:12px; letter-spacing:1px; text-transform:uppercase;
+    color:var(--text-dim); margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .status-badge{
+    font-family:var(--mono); font-size:11px; padding:2px 8px; border-radius:2px; border:1px solid var(--panel-line);
+    color:var(--text-dim);
+  }
+  .status-badge.ok{ color:var(--ok); border-color:var(--ok); }
+  .status-badge.warn{ color:var(--accent); border-color:var(--accent); }
+
+  .dropzone{
+    border:1.5px dashed var(--panel-line); border-radius:4px; padding:40px 16px;
+    text-align:center; cursor:pointer; transition:border-color .15s;
+  }
+  .dropzone:hover, .dropzone.drag{ border-color:var(--accent); }
+  .dropzone p{ margin:0; color:var(--text-dim); font-size:13px; }
+  .dropzone .big{ font-size:14px; color:var(--text); margin-bottom:6px; }
+
+  .editor-wrap{ position:relative; width:100%; max-width:460px; margin:0 auto; user-select:none; transform-origin:50% 50%; }
+  .editor-wrap canvas{ width:100%; height:auto; display:block; border-radius:2px; }
+  .editor-wrap svg{ position:absolute; top:0; left:0; width:100%; height:100%; overflow:visible; transition:opacity .1s; }
+  .quad-poly{ fill:rgba(214,67,43,.12); stroke:var(--accent); stroke-width:2; }
+  .handle{
+    position:absolute; width:18px; height:18px; margin:-9px 0 0 -9px;
+    border-radius:50%; background:var(--accent); border:2px solid var(--paper);
+    cursor:grab; touch-action:none; transition:opacity .1s;
+  }
+  .handle:active{ cursor:grabbing; }
+
+  .tilt-row{
+    margin-top:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
+  .tilt-row label{
+    font-family:var(--mono); font-size:11px; color:var(--text-dim); white-space:nowrap;
+    display:flex; gap:6px; align-items:center;
+  }
+  .tilt-row label span{ color:var(--text); min-width:34px; display:inline-block; }
+  .tilt-row input[type=range]{ flex:1; min-width:140px; accent-color:var(--accent); }
+
+  .row{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  button{
+    font-family:var(--sans); font-size:13px; font-weight:600; padding:9px 14px;
+    border-radius:3px; border:1px solid var(--panel-line); background:transparent; color:var(--text);
+    cursor:pointer; transition:all .12s;
+  }
+  button:hover{ border-color:var(--text-dim); }
+  button.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.primary:hover{ background:#c23a24; }
+  button:disabled{ opacity:.4; cursor:not-allowed; }
+  button.small{ font-size:12px; padding:6px 10px; font-weight:500; }
+
+  .preview-done{ text-align:center; }
+  .preview-done .thumb{
+    background:var(--paper); border-radius:3px; padding:10px; display:inline-block; margin-bottom:10px;
+  }
+  .preview-done .thumb canvas{ display:block; max-width:100%; height:auto; border-radius:1px; }
+  .note{ font-family:var(--mono); font-size:11px; color:var(--text-dim); margin-top:8px; }
+
+  .assemble{
+    margin-top:28px; background:var(--panel); border:1px solid var(--panel-line); border-radius:4px; padding:22px;
+    position:relative;
+  }
+  .assemble .locked{ color:var(--text-dim); font-size:14px; text-align:center; padding:30px 0; }
+
+  #pagePreviewScreen{
+    background:var(--paper); border-radius:2px; margin:16px auto; position:relative;
+    box-shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  .print-card{
+    position:absolute; background:#fff; overflow:hidden; box-shadow:0 0 0 1px rgba(0,0,0,.08);
+  }
+  .print-card img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .crop-mark{ position:absolute; background:#111; }
+
+  .assemble-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+  .instructions{
+    font-family:var(--mono); font-size:12px; color:var(--text-dim); text-align:center; margin-top:14px;
+    max-width:520px; margin-left:auto; margin-right:auto;
+  }
+
+  /* print-only page, hidden on screen */
+  #printPage{ display:none; }
+  @media print{
+    @page{ size:A4; margin:0; }
+    body *{ visibility:hidden; }
+    #printPage, #printPage *{ visibility:visible; }
+    #printPage{
+      display:block !important; position:absolute; top:0; left:0;
+      width:210mm; height:297mm; background:#fff;
+    }
+    .print-card-mm{ position:absolute; background:#fff; }
+    .print-card-mm img{ width:100%; height:100%; object-fit:cover; display:block; }
+    .crop-mark-mm{ position:absolute; background:#111; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="eyebrow">Local &middot; Offline &middot; Nothing uploaded anywhere</span>
+  <h1>Card Print Prep</h1>
+  <p>Upload the front and back of your Aadhaar or PAN card. This straightens each photo to a true rectangle, sharpens it if it looks soft, and lays both sides out on one A4 sheet at exact card size (85.6 &times; 53.98&nbsp;mm) with cut marks.</p>
+</header>
+
+<main>
+  <div class="grid">
+    <div class="card-panel" id="panel-front" data-side="front">
+      <div class="br-tr"></div><div class="br-bl"></div>
+      <div class="panel-title"><span>Front</span><span class="status-badge" id="badge-front">empty</span></div>
+      <div class="panel-body" id="body-front"></div>
+    </div>
+    <div class="card-panel" id="panel-back" data-side="back">
+      <div class="br-tr"></div><div class="br-bl"></div>
+      <div class="panel-title"><span>Back</span><span class="status-badge" id="badge-back">empty</span></div>
+      <div class="panel-body" id="body-back"></div>
+    </div>
+  </div>
+
+  <div class="assemble" id="assemble">
+    <div class="panel-title"><span>Print sheet &middot; A4</span><span class="status-badge" id="badge-assemble">waiting</span></div>
+    <div id="assembleBody"><div class="locked">Finish the front and back above to build the print sheet.</div></div>
+  </div>
+</main>
+
+<footer>Created by Rishabh Choudhary</footer>
+
+<div id="printPage"></div>
+
+<input type="file" id="fileInputHidden-front" accept="image/*" style="display:none">
+<input type="file" id="fileInputHidden-back" accept="image/*" style="display:none">
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- physical constants ----------
+  const CARD_W_MM = 85.6, CARD_H_MM = 53.98;
+  const OUTPUT_DPI = 300;
+  const mmToPx = (mm, dpi) => Math.round(mm / 25.4 * dpi);
+  const CARD_PX_W = mmToPx(CARD_W_MM, OUTPUT_DPI);   // 1011
+  const CARD_PX_H = mmToPx(CARD_H_MM, OUTPUT_DPI);   // 637
+  const A4_W_MM = 210, A4_H_MM = 297;
+
+  const state = { front: null, back: null };
+
+  // ---------- linear algebra: homography (DLT) ----------
+  function computeHomography(fromPts, toPts){
+    const A = [];
+    for (let i=0;i<4;i++){
+      const [x,y]=fromPts[i], [X,Y]=toPts[i];
+      A.push([x,y,1,0,0,0,-x*X,-y*X, X]);
+      A.push([0,0,0,x,y,1,-x*Y,-y*Y, Y]);
+    }
+    const n=8;
+    for (let col=0; col<n; col++){
+      let pivot=col;
+      for (let r=col+1;r<n;r++) if (Math.abs(A[r][col])>Math.abs(A[pivot][col])) pivot=r;
+      [A[col],A[pivot]]=[A[pivot],A[col]];
+      const pv=A[col][col];
+      if (Math.abs(pv)<1e-12) continue;
+      for (let r=0;r<n;r++){
+        if (r===col) continue;
+        const f=A[r][col]/pv;
+        for (let c=col;c<=n;c++) A[r][c]-=f*A[col][c];
+      }
+    }
+    const h=new Array(9);
+    for (let i=0;i<n;i++) h[i]=A[i][n]/A[i][i];
+    h[8]=1;
+    return h;
+  }
+  function applyH(h,x,y){
+    const X=h[0]*x+h[1]*y+h[2], Y=h[3]*x+h[4]*y+h[5], W=h[6]*x+h[7]*y+h[8];
+    return [X/W, Y/W];
+  }
+
+  // ---------- perspective warp: rect(dst) -> quad(src image) ----------
+  function warpQuadToCard(srcCanvas, quad, outW, outH){
+    const sctx = srcCanvas.getContext('2d');
+    const srcData = sctx.getImageData(0,0,srcCanvas.width, srcCanvas.height);
+    const sw = srcCanvas.width, sh = srcCanvas.height;
+    const rect = [[0,0],[outW,0],[outW,outH],[0,outH]];
+    const H = computeHomography(rect, quad); // maps output rect coords -> source pixel coords
+
+    const out = document.createElement('canvas');
+    out.width = outW; out.height = outH;
+    const octx = out.getContext('2d');
+    const outData = octx.createImageData(outW, outH);
+
+    const sData = srcData.data, oData = outData.data;
+    for (let y=0;y<outH;y++){
+      for (let x=0;x<outW;x++){
+        const [sx, sy] = applyH(H, x+0.5, y+0.5);
+        const oi = (y*outW+x)*4;
+        if (sx<0||sy<0||sx>=sw-1||sy>=sh-1){
+          oData[oi]=255; oData[oi+1]=255; oData[oi+2]=255; oData[oi+3]=255;
+          continue;
+        }
+        // bilinear sample
+        const x0=Math.floor(sx), y0=Math.floor(sy);
+        const fx=sx-x0, fy=sy-y0;
+        for (let c=0;c<3;c++){
+          const p00=sData[(y0*sw+x0)*4+c];
+          const p10=sData[(y0*sw+x0+1)*4+c];
+          const p01=sData[((y0+1)*sw+x0)*4+c];
+          const p11=sData[((y0+1)*sw+x0+1)*4+c];
+          const top=p00+(p10-p00)*fx;
+          const bot=p01+(p11-p01)*fx;
+          oData[oi+c]=top+(bot-top)*fy;
+        }
+        oData[oi+3]=255;
+      }
+    }
+    octx.putImageData(outData,0,0);
+    return out;
+  }
+
+  // ---------- orientation correction ----------
+  // If the card was photographed rotated ~90° (phone turned sideways), the
+  // detected quad's "long" edge ends up on the wrong axis, which would squish
+  // the image when warped into the landscape card template. Detect that and
+  // re-order the corners so the long edge always lands horizontally.
+  function edgeLen(a,b){ return Math.hypot(a[0]-b[0], a[1]-b[1]); }
+  function autoOrientQuad(quad){
+    let q = quad.slice();
+    for (let attempt=0; attempt<2; attempt++){
+      const e01=edgeLen(q[0],q[1]), e12=edgeLen(q[1],q[2]), e23=edgeLen(q[2],q[3]), e30=edgeLen(q[3],q[0]);
+      if (e01+e23 >= e12+e30) break;
+      q = [q[1], q[2], q[3], q[0]];
+    }
+    return q;
+  }
+  // lets a manual "Rotate 90°" button step through all 4 orientations on top
+  // of whatever auto-orient already decided
+  function cyclicShift(quad, n){
+    n = ((n%4)+4)%4;
+    const out = [];
+    for (let i=0;i<4;i++) out.push(quad[(i+n)%4]);
+    return out;
+  }
+
+  function expandedSize(ow, oh, angleDeg){
+    const rad = angleDeg*Math.PI/180;
+    const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+    return [Math.round(ow*cos+oh*sin), Math.round(ow*sin+oh*cos)];
+  }
+  function rotateQuadArbitrary(quad, ow, oh, newW, newH, angleDeg){
+    const rotated = rotatePointsAround(quad, ow/2, oh/2, angleDeg);
+    const dx = newW/2 - ow/2, dy = newH/2 - oh/2;
+    return rotated.map(([x,y])=>[x+dx, y+dy]);
+  }
+  // physically rotates the image by an arbitrary angle (bilinear resample, white background
+  // for the newly-exposed corners), used to commit the "fine tilt" slider onto the real photo
+  function rotateImageArbitrary(srcEl, ow, oh, angleDeg){
+    const [newW, newH] = expandedSize(ow, oh, angleDeg);
+    const srcCanvas = document.createElement('canvas');
+    srcCanvas.width = ow; srcCanvas.height = oh;
+    srcCanvas.getContext('2d').drawImage(srcEl, 0, 0, ow, oh);
+    const srcData = srcCanvas.getContext('2d').getImageData(0,0,ow,oh).data;
+
+    const dst = document.createElement('canvas');
+    dst.width = newW; dst.height = newH;
+    const dctx = dst.getContext('2d');
+    const dstImgData = dctx.createImageData(newW, newH);
+    const dd = dstImgData.data;
+
+    const rad = angleDeg*Math.PI/180, cosA=Math.cos(rad), sinA=Math.sin(rad);
+    const cxNew=newW/2, cyNew=newH/2, cxOld=ow/2, cyOld=oh/2;
+    for (let dy=0; dy<newH; dy++){
+      for (let dx=0; dx<newW; dx++){
+        const rx = dx-cxNew, ry = dy-cyNew;
+        const sxRel = rx*cosA + ry*sinA;
+        const syRel = -rx*sinA + ry*cosA;
+        const sx = sxRel+cxOld, sy = syRel+cyOld;
+        const di = (dy*newW+dx)*4;
+        if (sx<0||sy<0||sx>=ow-1||sy>=oh-1){
+          dd[di]=255; dd[di+1]=255; dd[di+2]=255; dd[di+3]=255;
+          continue;
+        }
+        const x0=Math.floor(sx), y0=Math.floor(sy), fx=sx-x0, fy=sy-y0;
+        for (let c=0;c<3;c++){
+          const p00=srcData[(y0*ow+x0)*4+c], p10=srcData[(y0*ow+x0+1)*4+c];
+          const p01=srcData[((y0+1)*ow+x0)*4+c], p11=srcData[((y0+1)*ow+x0+1)*4+c];
+          const top=p00+(p10-p00)*fx, bot=p01+(p11-p01)*fx;
+          dd[di+c]=top+(bot-top)*fy;
+        }
+        dd[di+3]=255;
+      }
+    }
+    dctx.putImageData(dstImgData,0,0);
+    return { canvas: dst, newW, newH };
+  }
+
+  function rotateImage90CW(imgEl){
+    const ow = imgEl.naturalWidth, oh = imgEl.naturalHeight;
+    const srcCanvas = document.createElement('canvas');
+    srcCanvas.width = ow; srcCanvas.height = oh;
+    const sctx = srcCanvas.getContext('2d');
+    sctx.drawImage(imgEl, 0, 0, ow, oh);
+    const srcData = sctx.getImageData(0,0,ow,oh).data;
+
+    const dstCanvas = document.createElement('canvas');
+    dstCanvas.width = oh; dstCanvas.height = ow;
+    const dctx = dstCanvas.getContext('2d');
+    const dstImgData = dctx.createImageData(oh, ow);
+    const dd = dstImgData.data;
+
+    // verified mapping: dst(dx,dy) = src(dy, oh-1-dx)  (90 deg clockwise)
+    for (let dy=0; dy<ow; dy++){
+      for (let dx=0; dx<oh; dx++){
+        const sx = dy, sy = oh-1-dx;
+        const si = (sy*ow+sx)*4, di = (dy*oh+dx)*4;
+        dd[di]=srcData[si]; dd[di+1]=srcData[si+1]; dd[di+2]=srcData[si+2]; dd[di+3]=srcData[si+3];
+      }
+    }
+    dctx.putImageData(dstImgData, 0, 0);
+    return dstCanvas;
+  }
+  function rotateQuadPoints90CW(quad, ow, oh){
+    return quad.map(([x,y]) => [oh-1-y, x]);
+  }
+  function rotatePointsAround(points, cx, cy, angleDeg){
+    const a = angleDeg * Math.PI/180;
+    const cos = Math.cos(a), sin = Math.sin(a);
+    return points.map(([x,y])=>{
+      const dx=x-cx, dy=y-cy;
+      return [cx + dx*cos - dy*sin, cy + dx*sin + dy*cos];
+    });
+  }
+
+  // ---------- edge-based document detector (Adobe-Scan-style) ----------
+  // blur -> Sobel edge map -> Otsu threshold -> dilate to close gaps ->
+  // flood-fill background from the image border -> whatever's NOT reached
+  // is the document -> take its 4 extreme corner points.
+  function boxBlur(gray, w, h, passes){
+    let src = gray;
+    for (let p=0; p<passes; p++){
+      const dst = new Float32Array(w*h);
+      for (let y=0;y<h;y++){
+        for (let x=0;x<w;x++){
+          let sum=0, n=0;
+          for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++){
+            const xx=x+dx, yy=y+dy;
+            if (xx<0||yy<0||xx>=w||yy>=h) continue;
+            sum += src[yy*w+xx]; n++;
+          }
+          dst[y*w+x] = sum/n;
+        }
+      }
+      src = dst;
+    }
+    return src;
+  }
+  function sobelMagnitude(gray, w, h){
+    const mag = new Float32Array(w*h);
+    let maxV = 0;
+    for (let y=1;y<h-1;y++){
+      for (let x=1;x<w-1;x++){
+        const gx = -gray[(y-1)*w+x-1] + gray[(y-1)*w+x+1]
+                   -2*gray[y*w+x-1]   + 2*gray[y*w+x+1]
+                   -gray[(y+1)*w+x-1] + gray[(y+1)*w+x+1];
+        const gy = -gray[(y-1)*w+x-1] - 2*gray[(y-1)*w+x] - gray[(y-1)*w+x+1]
+                   +gray[(y+1)*w+x-1] + 2*gray[(y+1)*w+x] + gray[(y+1)*w+x+1];
+        const m = Math.sqrt(gx*gx+gy*gy);
+        mag[y*w+x] = m;
+        if (m>maxV) maxV = m;
+      }
+    }
+    return { mag, maxV };
+  }
+  function otsuThreshold(mag, w, h, maxV){
+    const bins = 256;
+    const hist = new Array(bins).fill(0);
+    const scale = maxV>0 ? (bins-1)/maxV : 1;
+    for (let i=0;i<mag.length;i++) hist[Math.round(mag[i]*scale)]++;
+    const total = mag.length;
+    let sum=0; for (let t=0;t<bins;t++) sum += t*hist[t];
+    let sumB=0, wB=0, wF=0, maxVar=0, threshold=0;
+    for (let t=0;t<bins;t++){
+      wB += hist[t]; if (wB===0) continue;
+      wF = total - wB; if (wF===0) break;
+      sumB += t*hist[t];
+      const mB = sumB/wB, mF=(sum-sumB)/wF;
+      const varBetween = wB*wF*(mB-mF)*(mB-mF);
+      if (varBetween > maxVar){ maxVar = varBetween; threshold = t; }
+    }
+    return threshold/scale;
+  }
+  function dilateMask(mask, w, h, iterations){
+    let src = mask;
+    for (let it=0; it<iterations; it++){
+      const dst = new Uint8Array(w*h);
+      for (let y=0;y<h;y++){
+        for (let x=0;x<w;x++){
+          let v = 0;
+          for (let dy=-1;dy<=1 && !v;dy++){
+            for (let dx=-1;dx<=1 && !v;dx++){
+              const xx=x+dx, yy=y+dy;
+              if (xx<0||yy<0||xx>=w||yy>=h) continue;
+              if (src[yy*w+xx]) v=1;
+            }
+          }
+          dst[y*w+x]=v;
+        }
+      }
+      src = dst;
+    }
+    return src;
+  }
+  function floodBackground(wall, w, h){
+    const bg = new Uint8Array(w*h);
+    const stack = new Int32Array(w*h);
+    let sp = 0;
+    function pushIfValid(idx){ if (!wall[idx] && !bg[idx]){ bg[idx]=1; stack[sp++]=idx; } }
+    for (let x=0;x<w;x++){ pushIfValid(x); pushIfValid((h-1)*w+x); }
+    for (let y=0;y<h;y++){ pushIfValid(y*w); pushIfValid(y*w+w-1); }
+    while (sp>0){
+      const idx = stack[--sp];
+      const x = idx % w, y = (idx / w)|0;
+      if (x>0) pushIfValid(idx-1);
+      if (x<w-1) pushIfValid(idx+1);
+      if (y>0) pushIfValid(idx-w);
+      if (y<h-1) pushIfValid(idx+w);
+    }
+    return bg;
+  }
+  function extractQuadFromInterior(interior, w, h){
+    const best = {
+      tl: {score: Infinity, pt:null}, tr:{score:-Infinity, pt:null},
+      br: {score:-Infinity, pt:null}, bl:{score:Infinity, pt:null}
+    };
+    let count = 0;
+    for (let y=0;y<h;y++){
+      for (let x=0;x<w;x++){
+        if (!interior[y*w+x]) continue;
+        count++;
+        const sum = x+y, diff = x-y;
+        if (sum < best.tl.score){ best.tl.score=sum; best.tl.pt=[x,y]; }
+        if (sum > best.br.score){ best.br.score=sum; best.br.pt=[x,y]; }
+        if (diff > best.tr.score){ best.tr.score=diff; best.tr.pt=[x,y]; }
+        if (diff < best.bl.score){ best.bl.score=diff; best.bl.pt=[x,y]; }
+      }
+    }
+    if (count===0 || !best.tl.pt || !best.tr.pt || !best.br.pt || !best.bl.pt) return null;
+    return { quad:[best.tl.pt, best.tr.pt, best.br.pt, best.bl.pt], area: count };
+  }
+  function detectQuadFromGray(gray, w, h){
+    const blurred = boxBlur(gray, w, h, 2);
+    const { mag, maxV } = sobelMagnitude(blurred, w, h);
+    if (maxV < 1) return null;
+    const thresh = otsuThreshold(mag, w, h, maxV);
+    const edge0 = new Uint8Array(w*h);
+    for (let i=0;i<mag.length;i++) edge0[i] = mag[i] > thresh ? 1 : 0;
+
+    const totalPx = w*h;
+    let bestResult = null;
+    for (const iters of [2,3,5,7]){
+      const wall = dilateMask(edge0, w, h, iters);
+      const bg = floodBackground(wall, w, h);
+      const interior = new Uint8Array(w*h);
+      let interiorCount = 0;
+      for (let i=0;i<totalPx;i++){ if (!bg[i]){ interior[i]=1; interiorCount++; } }
+      const frac = interiorCount/totalPx;
+      if (frac > 0.05 && frac < 0.92){
+        const res = extractQuadFromInterior(interior, w, h);
+        if (res){ bestResult = { ...res, frac, iters }; break; }
+      } else if (!bestResult && frac>0.02 && frac<0.98){
+        const res = extractQuadFromInterior(interior, w, h);
+        if (res) bestResult = { ...res, frac, iters };
+      }
+    }
+    return bestResult;
+  }
+  // fallback for the rare case the edge method finds nothing usable:
+  // plain background-color-distance bounding box
+  function colorDistanceFallbackQuad(ctx, sw, sh){
+    const data = ctx.getImageData(0,0,sw,sh).data;
+    const patch = Math.max(3, Math.floor(Math.min(sw,sh)*0.04));
+    function avgAt(x0,y0){
+      let r=0,g=0,b=0,n=0;
+      for (let y=y0;y<y0+patch;y++) for (let x=x0;x<x0+patch;x++){
+        if (x<0||y<0||x>=sw||y>=sh) continue;
+        const i=(y*sw+x)*4; r+=data[i]; g+=data[i+1]; b+=data[i+2]; n++;
+      }
+      return [r/n,g/n,b/n];
+    }
+    const corners = [avgAt(0,0), avgAt(sw-patch,0), avgAt(0,sh-patch), avgAt(sw-patch,sh-patch)];
+    const bg = [0,1,2].map(k => corners.reduce((s,c)=>s+c[k],0)/4);
+    const colSum = new Array(sw).fill(0), rowSum = new Array(sh).fill(0);
+    for (let y=0;y<sh;y++) for (let x=0;x<sw;x++){
+      const i=(y*sw+x)*4;
+      const dr=data[i]-bg[0], dg=data[i+1]-bg[1], db=data[i+2]-bg[2];
+      if (Math.sqrt(dr*dr+dg*dg+db*db) > 42){ colSum[x]++; rowSum[y]++; }
+    }
+    function findRange(sums, dim, otherDim){
+      const thresh = otherDim * 0.12;
+      let lo=0, hi=dim-1;
+      while (lo<dim && sums[lo]<thresh) lo++;
+      while (hi>0 && sums[hi]<thresh) hi--;
+      if (lo>=hi) return [Math.floor(dim*0.06), Math.floor(dim*0.94)];
+      return [lo, hi];
+    }
+    const [x0,x1] = findRange(colSum, sw, sh);
+    const [y0,y1] = findRange(rowSum, sh, sw);
+    return [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+  }
+
+  function autoDetectQuad(imgEl){
+    const nw = imgEl.naturalWidth, nh = imgEl.naturalHeight;
+    const scale = Math.min(1, 550 / Math.max(nw, nh));
+    const sw = Math.max(1, Math.round(nw*scale)), sh = Math.max(1, Math.round(nh*scale));
+    const c = document.createElement('canvas'); c.width=sw; c.height=sh;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(imgEl, 0, 0, sw, sh);
+    const data = ctx.getImageData(0,0,sw,sh).data;
+
+    const gray = new Float32Array(sw*sh);
+    for (let i=0, j=0; i<data.length; i+=4, j++){
+      gray[j] = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+    }
+
+    let quad = null;
+    const result = detectQuadFromGray(gray, sw, sh);
+    if (result) quad = result.quad;
+    if (!quad) quad = colorDistanceFallbackQuad(ctx, sw, sh);
+
+    const inv = 1/scale;
+    return quad.map(([x,y]) => [x*inv, y*inv]);
+  }
+
+  // ---------- image quality: blur score + auto levels + sharpen ----------
+  function laplacianVariance(canvas){
+    const w=canvas.width, h=canvas.height;
+    const step = Math.max(1, Math.floor(Math.max(w,h)/300));
+    const ctx = canvas.getContext('2d');
+    const data = ctx.getImageData(0,0,w,h).data;
+    function gray(x,y){ const i=(y*w+x)*4; return 0.299*data[i]+0.587*data[i+1]+0.114*data[i+2]; }
+    let sum=0, sum2=0, n=0;
+    for (let y=step;y<h-step;y+=step){
+      for (let x=step;x<w-step;x+=step){
+        const lap = -4*gray(x,y) + gray(x-step,y) + gray(x+step,y) + gray(x,y-step) + gray(x,y+step);
+        sum+=lap; sum2+=lap*lap; n++;
+      }
+    }
+    const mean = sum/n;
+    return sum2/n - mean*mean;
+  }
+
+  function enhanceCanvas(canvas){
+    const w=canvas.width, h=canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0,0,w,h);
+    const d = imgData.data;
+
+    // --- auto levels: percentile stretch per channel ---
+    const hist = [new Array(256).fill(0), new Array(256).fill(0), new Array(256).fill(0)];
+    for (let i=0;i<d.length;i+=4){ hist[0][d[i]]++; hist[1][d[i+1]]++; hist[2][d[i+2]]++; }
+    const total = w*h;
+    const lowP = total*0.01, highP = total*0.99;
+    const bounds = hist.map(h_ => {
+      let acc=0, lo=0, hi=255;
+      for (let v=0; v<256; v++){ acc+=h_[v]; if (acc>=lowP){ lo=v; break; } }
+      acc=0;
+      for (let v=255; v>=0; v--){ acc+=h_[v]; if (acc>=(total-highP)){ hi=v; break; } }
+      if (hi<=lo) { lo=0; hi=255; }
+      return [lo,hi];
+    });
+
+    const blurVar = laplacianVariance(canvas);
+    const isBlurry = blurVar < 90;
+    const amount = isBlurry ? 1.35 : 0.55;
+
+    // apply levels stretch in place
+    for (let i=0;i<d.length;i+=4){
+      for (let c=0;c<3;c++){
+        const [lo,hi]=bounds[c];
+        let v = (d[i+c]-lo) * 255/(hi-lo);
+        d[i+c] = v<0?0:(v>255?255:v);
+      }
+    }
+    ctx.putImageData(imgData,0,0);
+
+    // --- unsharp mask: blurred = 3x3 box blur, sharpened = orig + amount*(orig-blurred) ---
+    const src = ctx.getImageData(0,0,w,h);
+    const s = src.data;
+    const blurred = new Float32Array(s.length);
+    for (let y=0;y<h;y++){
+      for (let x=0;x<w;x++){
+        for (let c=0;c<3;c++){
+          let sum=0, n=0;
+          for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++){
+            const xx=x+dx, yy=y+dy;
+            if (xx<0||yy<0||xx>=w||yy>=h) continue;
+            sum += s[(yy*w+xx)*4+c]; n++;
+          }
+          blurred[(y*w+x)*4+c] = sum/n;
+        }
+      }
+    }
+    const out = ctx.createImageData(w,h);
+    const o = out.data;
+    for (let i=0;i<s.length;i+=4){
+      for (let c=0;c<3;c++){
+        let v = s[i+c] + amount*(s[i+c]-blurred[i+c]);
+        o[i+c] = v<0?0:(v>255?255:v);
+      }
+      o[i+3]=255;
+    }
+    ctx.putImageData(out,0,0);
+    return { isBlurry };
+  }
+
+  // ---------- per-side UI ----------
+  function makeSide(side){
+    const bodyEl = document.getElementById('body-'+side);
+    const badgeEl = document.getElementById('badge-'+side);
+    const fileInput = document.getElementById('fileInputHidden-'+side);
+    const s = { side, quad:null, imgEl:null, srcCanvas:null, outCanvas:null, done:false, isBlurry:false, rotationOffset:0 };
+    state[side] = s;
+
+    function setBadge(text, cls){ badgeEl.textContent=text; badgeEl.className='status-badge'+(cls?' '+cls:''); }
+
+    function renderEmpty(){
+      s.done=false; s.imgEl=null; s.quad=null; s.rotationOffset=0; s.srcCanvasFull=null;
+      s.baseQuad=null; s.tiltAngle=0;
+      setBadge('empty');
+      bodyEl.innerHTML = `
+        <div class="dropzone" id="dz-${side}">
+          <p class="big">Click to choose a photo</p>
+          <p>or drag one here &middot; JPG or PNG</p>
+        </div>`;
+      const dz = document.getElementById('dz-'+side);
+      dz.addEventListener('click', ()=>fileInput.click());
+      dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
+      dz.addEventListener('dragleave', ()=>dz.classList.remove('drag'));
+      dz.addEventListener('drop', e=>{
+        e.preventDefault(); dz.classList.remove('drag');
+        if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+      });
+      checkAssemble();
+    }
+
+    function loadFile(file){
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => { s.imgEl = img; s.quad = autoDetectQuad(img); renderEditor(); };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    fileInput.addEventListener('change', e=>{ if (e.target.files[0]) loadFile(e.target.files[0]); e.target.value=''; });
+
+    function renderEditor(){
+      setBadge('adjust corners');
+      if (!s.baseQuad) s.baseQuad = s.quad.map(p=>p.slice());
+      s.tiltAngle = 0;
+      const ow = s.imgEl.naturalWidth, oh = s.imgEl.naturalHeight;
+
+      bodyEl.innerHTML = `
+        <div class="editor-wrap" id="ew-${side}">
+          <canvas id="ec-${side}"></canvas>
+          <svg id="svg-${side}"><polygon class="quad-poly" id="poly-${side}"></polygon></svg>
+        </div>
+        <div class="tilt-row">
+          <label for="tilt-${side}">Fine tilt <span id="tiltval-${side}">0.0&deg;</span></label>
+          <input type="range" id="tilt-${side}" min="-15" max="15" step="0.5" value="0">
+        </div>
+        <div class="row">
+          <button class="small" id="rotate90-${side}">&#8635; Rotate photo 90&deg;</button>
+          <button class="small" id="redetect-${side}">Re-detect edges</button>
+          <button class="small primary" id="apply-${side}">Use this crop &rarr;</button>
+        </div>
+        <div class="row">
+          <button class="small" id="reset-${side}">Choose different photo</button>
+        </div>
+        <p class="note">Drag the four dots to match the card's corners. The slider straightens the photo itself &mdash; drag it, then let go to apply.</p>`;
+
+      const wrap = document.getElementById('ew-'+side);
+      const canvas = document.getElementById('ec-'+side);
+      const svg = document.getElementById('svg-'+side);
+      const poly = document.getElementById('poly-'+side);
+      const tiltSlider = document.getElementById('tilt-'+side);
+      const tiltLabel = document.getElementById('tiltval-'+side);
+      const handles = [];
+
+      // downscaled copy of the working image, used only for fast live preview while dragging the slider
+      const maxDim = 460;
+      const pScale = Math.min(1, maxDim / Math.max(ow, oh));
+      const previewSrc = document.createElement('canvas');
+      previewSrc.width = Math.round(ow*pScale); previewSrc.height = Math.round(oh*pScale);
+      previewSrc.getContext('2d').drawImage(s.imgEl, 0, 0, previewSrc.width, previewSrc.height);
+
+      const [padW, padH] = expandedSize(previewSrc.width, previewSrc.height, 15); // enough room for the slider's max range
+      canvas.width = padW; canvas.height = padH;
+      canvas.style.width = '100%'; canvas.style.height = 'auto';
+      const ctx = canvas.getContext('2d');
+      const padOffsetX = (padW - previewSrc.width)/2, padOffsetY = (padH - previewSrc.height)/2;
+
+      function drawFlat(){
+        ctx.clearRect(0,0,padW,padH);
+        ctx.fillStyle = '#0f1114'; ctx.fillRect(0,0,padW,padH);
+        ctx.drawImage(previewSrc, padOffsetX, padOffsetY);
+      }
+      function drawRotatedPreview(angleDeg){
+        ctx.clearRect(0,0,padW,padH);
+        ctx.fillStyle = '#0f1114'; ctx.fillRect(0,0,padW,padH);
+        const { canvas: rotCanvas } = rotateImageArbitrary(previewSrc, previewSrc.width, previewSrc.height, angleDeg);
+        const dx = (padW-rotCanvas.width)/2, dy = (padH-rotCanvas.height)/2;
+        ctx.drawImage(rotCanvas, dx, dy);
+      }
+
+      function toDisplay(x,y){
+        const rect = canvas.getBoundingClientRect();
+        const cssScale = rect.width / padW;
+        return [(x*pScale+padOffsetX)*cssScale, (y*pScale+padOffsetY)*cssScale];
+      }
+      function toFullRes(px,py){
+        const rect = canvas.getBoundingClientRect();
+        const cssScale = rect.width / padW;
+        const bx = px/cssScale, by = py/cssScale;
+        return [(bx-padOffsetX)/pScale, (by-padOffsetY)/pScale];
+      }
+
+      function layout(){
+        handles.forEach((h,i)=>{
+          const [dx,dy] = toDisplay(s.quad[i][0], s.quad[i][1]);
+          h.style.left = dx+'px'; h.style.top = dy+'px';
+        });
+        poly.setAttribute('points', s.quad.map(([x,y])=>{
+          const [dx,dy] = toDisplay(x,y); return `${dx},${dy}`;
+        }).join(' '));
+      }
+
+      drawFlat();
+      for (let i=0;i<4;i++){
+        const h = document.createElement('div');
+        h.className='handle';
+        wrap.appendChild(h);
+        handles.push(h);
+        h.addEventListener('pointerdown', ev=>{
+          ev.preventDefault();
+          h.setPointerCapture(ev.pointerId);
+          const onMove = mv=>{
+            const rect = wrap.getBoundingClientRect();
+            let px = mv.clientX-rect.left, py = mv.clientY-rect.top;
+            const [x,y] = toFullRes(px,py);
+            s.quad[i] = [Math.max(0,Math.min(ow,x)), Math.max(0,Math.min(oh,y))];
+            layout();
+          };
+          const onUp = ()=>{
+            window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp);
+            s.baseQuad = s.quad.map(p=>p.slice());
+          };
+          window.addEventListener('pointermove', onMove);
+          window.addEventListener('pointerup', onUp);
+        });
+      }
+      layout();
+      window.addEventListener('resize', layout);
+
+      tiltSlider.addEventListener('input', ()=>{
+        const angle = parseFloat(tiltSlider.value);
+        tiltLabel.textContent = angle.toFixed(1)+'\u00b0';
+        svg.style.opacity = 0.15;
+        handles.forEach(h=>h.style.opacity=0.15);
+        if (angle === 0) drawFlat(); else drawRotatedPreview(angle);
+      });
+      tiltSlider.addEventListener('change', ()=>{
+        const angle = parseFloat(tiltSlider.value);
+        svg.style.opacity = 1;
+        handles.forEach(h=>h.style.opacity=1);
+        if (angle === 0){ drawFlat(); tiltSlider.value=0; tiltLabel.textContent='0.0\u00b0'; return; }
+        const [newW, newH] = expandedSize(ow, oh, angle);
+        const { canvas: rotatedFull } = rotateImageArbitrary(s.imgEl, ow, oh, angle);
+        const newQuad = rotateQuadArbitrary(s.quad, ow, oh, newW, newH, angle);
+        const newImg = new Image();
+        newImg.onload = () => {
+          s.imgEl = newImg; s.quad = newQuad; s.baseQuad = newQuad.map(p=>p.slice());
+          renderEditor();
+        };
+        newImg.src = rotatedFull.toDataURL('image/png');
+      });
+
+      function rewarp(){
+        const orientedQuad = cyclicShift(autoOrientQuad(s.quad), s.rotationOffset);
+        const warped = warpQuadToCard(s.srcCanvasFull, orientedQuad, CARD_PX_W, CARD_PX_H);
+        const { isBlurry } = enhanceCanvas(warped);
+        s.outCanvas = warped; s.isBlurry = isBlurry; s.done = true;
+      }
+      s.rewarp = rewarp;
+
+      document.getElementById('rotate90-'+side).onclick = ()=>{
+        const rotatedCanvas = rotateImage90CW(s.imgEl);
+        const newQuad = rotateQuadPoints90CW(s.quad, s.imgEl.naturalWidth, s.imgEl.naturalHeight);
+        const newImg = new Image();
+        newImg.onload = () => {
+          s.imgEl = newImg; s.quad = newQuad; s.baseQuad = newQuad.map(p=>p.slice());
+          renderEditor();
+        };
+        newImg.src = rotatedCanvas.toDataURL('image/png');
+      };
+      document.getElementById('redetect-'+side).onclick = ()=>{
+        s.quad = autoDetectQuad(s.imgEl); s.baseQuad = s.quad.map(p=>p.slice());
+        layout();
+      };
+      document.getElementById('reset-'+side).onclick = renderEmpty;
+      document.getElementById('apply-'+side).onclick = ()=>{
+        const sc = document.createElement('canvas');
+        sc.width = s.imgEl.naturalWidth; sc.height = s.imgEl.naturalHeight;
+        sc.getContext('2d').drawImage(s.imgEl,0,0);
+        s.srcCanvasFull = sc;
+        s.rotationOffset = 0;
+        rewarp();
+        renderDone();
+      };
+    }
+
+    function renderDone(){
+      setBadge(s.isBlurry ? 'sharpened (was soft)' : 'ready', s.isBlurry ? 'warn' : 'ok');
+      bodyEl.innerHTML = `
+        <div class="preview-done">
+          <div class="thumb" id="thumbhost-${side}"></div>
+          <div class="row" style="justify-content:center">
+            <button class="small" id="rotate-${side}">Rotate 90&deg;</button>
+            <button class="small" id="edit-${side}">Adjust corners again</button>
+            <button class="small" id="redo-${side}">Choose different photo</button>
+          </div>
+        </div>`;
+      document.getElementById('thumbhost-'+side).appendChild(s.outCanvas);
+      s.outCanvas.style.width = '280px';
+      document.getElementById('rotate-'+side).onclick = ()=>{
+        s.rotationOffset = (s.rotationOffset+1)%4;
+        s.rewarp();
+        renderDone();
+      };
+      document.getElementById('edit-'+side).onclick = renderEditor;
+      document.getElementById('redo-'+side).onclick = renderEmpty;
+      checkAssemble();
+    }
+
+    renderEmpty();
+  }
+
+  // ---------- assembly: A4 sheet with both cards + crop marks ----------
+  function checkAssemble(){
+    const badge = document.getElementById('badge-assemble');
+    const body = document.getElementById('assembleBody');
+    if (!(state.front && state.front.done && state.back && state.back.done)){
+      badge.textContent='waiting'; badge.className='status-badge';
+      body.innerHTML = `<div class="locked">Finish the front and back above to build the print sheet.</div>`;
+      return;
+    }
+    badge.textContent='ready'; badge.className='status-badge ok';
+
+    const gapMM = 8;
+    const totalWmm = CARD_W_MM*2 + gapMM;
+    const leftMM = (A4_W_MM - totalWmm)/2;
+    const topMM = (A4_H_MM - CARD_H_MM)/2;
+    const positions = [
+      { x: leftMM, y: topMM, canvas: state.front.outCanvas },
+      { x: leftMM + CARD_W_MM + gapMM, y: topMM, canvas: state.back.outCanvas }
+    ];
+
+    // on-screen scaled preview
+    const screenPxPerMM = 2.2;
+    body.innerHTML = `
+      <div id="pagePreviewScreen" style="width:${A4_W_MM*screenPxPerMM}px;height:${A4_H_MM*screenPxPerMM}px;"></div>
+      <div class="assemble-actions">
+        <button class="primary" id="btnPrint">Print</button>
+        <button id="btnDownload">Download print-ready PNG</button>
+      </div>
+      <p class="instructions">In the print dialog, set scale to "Actual size / 100%" (not "Fit to page") and turn off headers &amp; footers. Cut along the corner marks.</p>`;
+
+    const screenPage = document.getElementById('pagePreviewScreen');
+    const markLenMM = 5, markGapMM = 2, markThickMM = 0.3;
+
+    function addCropMarksTo(container, x, y, unit, pxPerMM, isMM){
+      const segs = [
+        // top-left
+        [x-markGapMM-markLenMM, y, markLenMM, markThickMM],
+        [x, y-markGapMM-markLenMM, markThickMM, markLenMM],
+        // top-right
+        [x+CARD_W_MM+markGapMM, y, markLenMM, markThickMM],
+        [x+CARD_W_MM, y-markGapMM-markLenMM, markThickMM, markLenMM],
+        // bottom-left
+        [x-markGapMM-markLenMM, y+CARD_H_MM, markLenMM, markThickMM],
+        [x, y+CARD_H_MM+markGapMM, markThickMM, markLenMM],
+        // bottom-right
+        [x+CARD_W_MM+markGapMM, y+CARD_H_MM, markLenMM, markThickMM],
+        [x+CARD_W_MM, y+CARD_H_MM+markGapMM, markThickMM, markLenMM],
+      ];
+      segs.forEach(([mx,my,mw,mh])=>{
+        const el = document.createElement('div');
+        el.className = isMM ? 'crop-mark-mm' : 'crop-mark';
+        el.style.left=(mx*pxPerMM)+unit; el.style.top=(my*pxPerMM)+unit;
+        el.style.width=(mw*pxPerMM)+unit; el.style.height=(mh*pxPerMM)+unit;
+        container.appendChild(el);
+      });
+    }
+
+    positions.forEach(p=>{
+      const card = document.createElement('div');
+      card.className='print-card';
+      card.style.left=(p.x*screenPxPerMM)+'px'; card.style.top=(p.y*screenPxPerMM)+'px';
+      card.style.width=(CARD_W_MM*screenPxPerMM)+'px'; card.style.height=(CARD_H_MM*screenPxPerMM)+'px';
+      const img = document.createElement('img'); img.src = p.canvas.toDataURL('image/png');
+      card.appendChild(img);
+      screenPage.appendChild(card);
+      addCropMarksTo(screenPage, p.x, p.y, 'px', screenPxPerMM, false);
+    });
+
+    // build the real print page (mm units, used only by @media print)
+    const printPage = document.getElementById('printPage');
+    printPage.innerHTML = '';
+    positions.forEach(p=>{
+      const card = document.createElement('div');
+      card.className='print-card-mm';
+      card.style.left=p.x+'mm'; card.style.top=p.y+'mm';
+      card.style.width=CARD_W_MM+'mm'; card.style.height=CARD_H_MM+'mm';
+      const img = document.createElement('img'); img.src = p.canvas.toDataURL('image/png');
+      card.appendChild(img);
+      printPage.appendChild(card);
+      addCropMarksTo(printPage, p.x, p.y, 'mm', 1, true);
+    });
+
+    document.getElementById('btnPrint').onclick = ()=>window.print();
+    document.getElementById('btnDownload').onclick = downloadPNG;
+
+    function downloadPNG(){
+      const dpi = 300;
+      const pxPerMM = dpi/25.4;
+      const W = Math.round(A4_W_MM*pxPerMM), H = Math.round(A4_H_MM*pxPerMM);
+      const out = document.createElement('canvas'); out.width=W; out.height=H;
+      const ctx = out.getContext('2d');
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#111';
+      positions.forEach(p=>{
+        ctx.drawImage(p.canvas, p.x*pxPerMM, p.y*pxPerMM, CARD_W_MM*pxPerMM, CARD_H_MM*pxPerMM);
+        const segs = [
+          [p.x-markGapMM-markLenMM, p.y, markLenMM, markThickMM],
+          [p.x, p.y-markGapMM-markLenMM, markThickMM, markLenMM],
+          [p.x+CARD_W_MM+markGapMM, p.y, markLenMM, markThickMM],
+          [p.x+CARD_W_MM, p.y-markGapMM-markLenMM, markThickMM, markLenMM],
+          [p.x-markGapMM-markLenMM, p.y+CARD_H_MM, markLenMM, markThickMM],
+          [p.x, p.y+CARD_H_MM+markGapMM, markThickMM, markLenMM],
+          [p.x+CARD_W_MM+markGapMM, p.y+CARD_H_MM, markLenMM, markThickMM],
+          [p.x+CARD_W_MM, p.y+CARD_H_MM+markGapMM, markThickMM, markLenMM],
+        ];
+        segs.forEach(([mx,my,mw,mh])=>{
+          ctx.fillRect(mx*pxPerMM, my*pxPerMM, mw*pxPerMM, mh*pxPerMM);
+        });
+      });
+      out.toBlob(blob=>{
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'card-print-A4.png';
+        a.click();
+      }, 'image/png');
+    }
+  }
+
+  makeSide('front');
+  makeSide('back');
+})();
+</script>
+</body>
+</html>
