@@ -743,127 +743,103 @@
     }
     return threshold;
   }
-  // trims tight to the ink strokes (excludes surrounding printed box/label if the
-  // rough crop included some margin around it), then boosts contrast so the
-  // background goes clean white and the ink stays dark
-  // large-radius box blur used to estimate the LOCAL paper brightness under
-  // each pixel (ink strokes are thin relative to this radius, so they get
-  // blurred away, leaving just the slow-varying lighting/shadow trend)
-  function estimateLocalBackground(gray, w, h, radius){
-    const tmp = new Float32Array(w*h);
-    for (let y=0;y<h;y++){
-      for (let x=0;x<w;x++){
-        let sum=0,n=0;
-        for (let dx=-radius;dx<=radius;dx++){
-          const xx=x+dx; if (xx<0||xx>=w) continue;
-          sum+=gray[y*w+xx]; n++;
-        }
-        tmp[y*w+x]=sum/n;
-      }
-    }
-    const out = new Float32Array(w*h);
-    for (let y=0;y<h;y++){
-      for (let x=0;x<w;x++){
-        let sum=0,n=0;
-        for (let dy=-radius;dy<=radius;dy++){
-          const yy=y+dy; if (yy<0||yy>=h) continue;
-          sum+=tmp[yy*w+x]; n++;
-        }
-        out[y*w+x]=sum/n;
-      }
-    }
-    return out;
-  }
-  // finds the paper's peak brightness (the mode - since paper covers most of
-  // the crop, its brightness value is the most common one) and the darkest
-  // ink actually present. Uses a small ABSOLUTE pixel count rather than a
-  // percentage for the black point: ink often covers well under 1% of a
-  // signature crop, so a percentage-based percentile can land back inside the
-  // background cluster itself and miss the ink entirely (this was the cause
-  // of faint strokes fading to white).
-  function findWhiteAndBlackPoints(normalized){
-    const hist = new Array(256).fill(0);
-    for (let i=0;i<normalized.length;i++) hist[Math.max(0,Math.min(255,Math.round(normalized[i])))]++;
-    let whitePoint=255, modeCount=-1;
-    for (let v=100; v<256; v++){ if (hist[v]>modeCount){ modeCount=hist[v]; whitePoint=v; } }
-    const lowCount = Math.max(10, Math.round(normalized.length*0.0005));
-    let acc=0, blackPoint=0;
-    for (let v=0; v<256; v++){ acc+=hist[v]; if (acc>=lowCount){ blackPoint=v; break; } }
-    return { whitePoint, blackPoint };
-  }
-  function levelsStretch(v, blackPoint, whitePoint){
-    if (whitePoint<=blackPoint) return v;
-    const out = (v-blackPoint)/(whitePoint-blackPoint)*255;
-    return out<0?0:(out>255?255:out);
-  }
-  // darkens ink (especially faint/lightly-pressed strokes) toward black without
-  // flattening it to a solid blob - white (255) and black (0) are fixed points,
-  // so the background stays exactly white and only the ink gets bolder
-  function darkenInk(v, gamma){
-    return 255*Math.pow(Math.max(0,Math.min(255,v))/255, gamma);
-  }
 
+  // simple pipeline: crop tight to the ink, boost contrast, sharpen, then push
+  // the background to white with a straightforward threshold
   function cleanupSignature(canvas){
     const w=canvas.width, h=canvas.height;
     const ctx=canvas.getContext('2d');
-    const d=ctx.getImageData(0,0,w,h).data;
+    const d0=ctx.getImageData(0,0,w,h).data;
     const gray=new Float32Array(w*h);
-    for (let i=0,j=0;i<d.length;i+=4,j++) gray[j]=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    for (let i=0,j=0;i<d0.length;i+=4,j++) gray[j]=0.299*d0[i]+0.587*d0[i+1]+0.114*d0[i+2];
+    const inkThresh = otsuThresholdIntensity(gray);
 
-    // illumination-normalize FIRST, on the full (pre-crop) image, so both the
-    // ink bounding box and the final whitening are consistent and robust to
-    // uneven lighting/shadows - this avoids clipping faint strokes at the
-    // crop edges before they even reach the whitening step
-    const radius = Math.max(4, Math.round(Math.min(w,h)*0.12));
-    const localBg = estimateLocalBackground(gray, w, h, radius);
-    const normalized = new Float32Array(w*h);
-    for (let i=0;i<gray.length;i++) normalized[i] = Math.max(0, Math.min(255, (gray[i]/Math.max(1,localBg[i]))*255));
-    const { whitePoint, blackPoint } = findWhiteAndBlackPoints(normalized);
-
-    // ink bounding box: a generous cutoff (85% of the way from paper down to
-    // the darkest ink) so faint/lightly-pressed strokes are still included
-    const inkThresh = whitePoint - (whitePoint-blackPoint)*0.15;
     let minX=w,minY=h,maxX=-1,maxY=-1;
     for (let y=0;y<h;y++) for (let x=0;x<w;x++){
-      if (normalized[y*w+x] < inkThresh){
+      if (gray[y*w+x] < inkThresh){
         if (x<minX) minX=x; if (x>maxX) maxX=x;
         if (y<minY) minY=y; if (y>maxY) maxY=y;
       }
     }
-    let cropX0=0, cropY0=0, cw=w, ch=h;
+    let cropped = canvas;
     if (maxX>=0){
       const padX = Math.max(6, Math.round(w*0.04)), padY = Math.max(6, Math.round(h*0.08));
-      cropX0 = Math.max(0,minX-padX); cropY0 = Math.max(0,minY-padY);
-      const x1 = Math.min(w,maxX+padX), y1 = Math.min(h,maxY+padY);
-      cw = x1-cropX0; ch = y1-cropY0;
+      const x0=Math.max(0,minX-padX), y0=Math.max(0,minY-padY);
+      const x1=Math.min(w,maxX+padX), y1=Math.min(h,maxY+padY);
+      const cw=x1-x0, ch=y1-y0;
+      if (cw>4 && ch>4){
+        const c2=document.createElement('canvas'); c2.width=cw; c2.height=ch;
+        c2.getContext('2d').drawImage(canvas, x0,y0,cw,ch, 0,0,cw,ch);
+        cropped = c2;
+      }
     }
-    if (cw<=4 || ch<=4){ cropX0=0; cropY0=0; cw=w; ch=h; }
 
-    const cropped = document.createElement('canvas');
-    cropped.width = cw; cropped.height = ch;
     const cctx = cropped.getContext('2d');
-    cctx.drawImage(canvas, cropX0,cropY0,cw,ch, 0,0,cw,ch);
-    const cd = cctx.getImageData(0,0,cw,ch);
-    const cdd = cd.data;
+    const cw=cropped.width, ch=cropped.height;
 
-    // apply the gentle levels stretch (keeps faint ink distinctly visible
-    // while cleaning the background to white), then darken the ink so it
-    // reads as a bold, solid signature rather than a light-gray trace
-    const INK_DARKEN_GAMMA = 2.0;
+    // 1) contrast: per-channel percentile stretch
+    let imgData = cctx.getImageData(0,0,cw,ch);
+    let dd = imgData.data;
+    const hist=[new Array(256).fill(0),new Array(256).fill(0),new Array(256).fill(0)];
+    for (let i=0;i<dd.length;i+=4){ hist[0][dd[i]]++; hist[1][dd[i+1]]++; hist[2][dd[i+2]]++; }
+    const total=cw*ch, lowP=total*0.01, highP=total*0.99;
+    const bounds = hist.map(h_=>{
+      let acc=0,lo=0,hi=255;
+      for (let v=0;v<256;v++){ acc+=h_[v]; if (acc>=lowP){ lo=v; break; } }
+      acc=0;
+      for (let v=255;v>=0;v--){ acc+=h_[v]; if (acc>=(total-highP)){ hi=v; break; } }
+      if (hi<=lo){ lo=0; hi=255; }
+      return [lo,hi];
+    });
+    for (let i=0;i<dd.length;i+=4){
+      for (let c=0;c<3;c++){
+        const [lo,hi]=bounds[c];
+        let v=(dd[i+c]-lo)*255/(hi-lo);
+        dd[i+c]=v<0?0:(v>255?255:v);
+      }
+    }
+    cctx.putImageData(imgData,0,0);
+
+    // 2) sharpness: unsharp mask
+    const src = cctx.getImageData(0,0,cw,ch);
+    const s = src.data;
+    const blurred = new Float32Array(s.length);
     for (let y=0;y<ch;y++){
       for (let x=0;x<cw;x++){
-        const srcIdx = (y+cropY0)*w + (x+cropX0);
-        const stretched = levelsStretch(normalized[srcIdx], blackPoint, whitePoint);
-        const targetGray = darkenInk(stretched, INK_DARKEN_GAMMA);
-        const ratio = targetGray / Math.max(1, gray[srcIdx]);
-        const di = (y*cw+x)*4;
         for (let c=0;c<3;c++){
-          const v = cdd[di+c]*ratio;
-          cdd[di+c] = v<0?0:(v>255?255:v);
+          let sum=0,n=0;
+          for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++){
+            const xx=x+dx, yy=y+dy;
+            if (xx<0||yy<0||xx>=cw||yy>=ch) continue;
+            sum+=s[(yy*cw+xx)*4+c]; n++;
+          }
+          blurred[(y*cw+x)*4+c]=sum/n;
         }
       }
     }
-    cctx.putImageData(cd,0,0);
+    const sharpenAmount = 1.0;
+    const sharpOut = cctx.createImageData(cw,ch);
+    const so = sharpOut.data;
+    for (let i=0;i<s.length;i+=4){
+      for (let c=0;c<3;c++){
+        let v = s[i+c] + sharpenAmount*(s[i+c]-blurred[i+c]);
+        so[i+c] = v<0?0:(v>255?255:v);
+      }
+      so[i+3]=255;
+    }
+    cctx.putImageData(sharpOut,0,0);
+
+    // 3) white filter: push background toward pure white (threshold set
+    // relative to this crop's own ink/paper split, so it adapts per image)
+    const finalData = cctx.getImageData(0,0,cw,ch);
+    const fd = finalData.data;
+    const whiteFloor = Math.min(250, inkThresh + 35);
+    for (let i=0;i<fd.length;i+=4){
+      const gr = 0.299*fd[i]+0.587*fd[i+1]+0.114*fd[i+2];
+      if (gr > whiteFloor){ fd[i]=255; fd[i+1]=255; fd[i+2]=255; }
+    }
+    cctx.putImageData(finalData,0,0);
+
     return cropped;
   }
 
