@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#14161b">
+<title>Document & Photo Utilities</title>
+<style>
+:root{--bg:#14161b;--panel:#1c1f26;--line:#2d313a;--ink:#f1efe9;--dim:#9aa0ab;--acc:#e0472b;--mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.eyebrow,.mono{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em}
+.eyebrow{color:var(--acc);font-size:13px}
+header{border-bottom:1px solid var(--line);padding:36px 20px 28px}
+.in{max-width:640px;margin:0 auto}
+h1{font-size:clamp(30px,8vw,42px);line-height:1.1;font-weight:700;letter-spacing:-.01em;margin:10px 0}
+.lede{color:var(--dim);font-size:17px}
+main{flex:1;padding:32px 20px}
+.grid{display:grid;gap:26px}
+.card{position:relative;display:grid;gap:14px;background:var(--panel);border:1px solid var(--line);padding:24px 22px;color:inherit;text-decoration:none;transition:background .15s,border-color .15s}
+.card::before{content:"";position:absolute;inset:-2px;pointer-events:none;background:
+ linear-gradient(var(--acc),var(--acc)) top left/24px 3px,linear-gradient(var(--acc),var(--acc)) top left/3px 24px,
+ linear-gradient(var(--acc),var(--acc)) top right/24px 3px,linear-gradient(var(--acc),var(--acc)) top right/3px 24px,
+ linear-gradient(var(--acc),var(--acc)) bottom left/24px 3px,linear-gradient(var(--acc),var(--acc)) bottom left/3px 24px,
+ linear-gradient(var(--acc),var(--acc)) bottom right/24px 3px,linear-gradient(var(--acc),var(--acc)) bottom right/3px 24px;background-repeat:no-repeat}
+.card:hover,.card:focus-visible{background:#21252d;border-color:#3a3f4a;outline:none}
+.top{display:flex;justify-content:space-between;align-items:center}
+.num{font-size:12px;color:var(--dim)}
+.chip{font-size:12px;color:var(--dim);border:1px solid var(--line);padding:5px 10px;border-radius:3px}
+h2{font-size:22px;font-weight:700;line-height:1.25}
+.what{color:var(--dim);font-size:16px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;border-top:1px dashed #3a3f4a;padding-top:14px;font-size:15px}
+dt{font:12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--acc);padding-top:3px}
+dd{color:#d6d3cc}
+.open{font:13px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink);display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:14px}
+.card:hover .open span:last-child{color:var(--acc)}
+footer{border-top:1px solid var(--line);padding:18px 20px;font:12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="in">
+    <p class="eyebrow">Local · Offline · Nothing uploaded anywhere</p>
+    <h1>Document &amp; Photo Utilities</h1>
+    <p class="lede">Simple tools for school and form-filling work. Pick one below. Everything runs in your browser and your files never leave your device.</p>
+  </div>
+</header>
+
+<main>
+  <div class="in grid">
+
+    <a class="card" href="id-card-print-tool.html">
+      <div class="top"><span class="mono num">01</span><span class="mono chip">Print</span></div>
+      <h2>ID Card Print Tool</h2>
+      <p class="what">Print both sides of an Aadhaar or PAN card on one A4 page.</p>
+      <dl>
+        <dt>You give</dt><dd>Photos of the card front and back</dd>
+        <dt>You get</dt><dd>A straightened, sharpened A4 sheet at exact card size, with cut marks</dd>
+      </dl>
+      <div class="open"><span>Open tool</span><span>→</span></div>
+    </a>
+
+    <a class="card" href="photo-signature-extractor.html">
+      <div class="top"><span class="mono num">02</span><span class="mono chip">Extract</span></div>
+      <h2>Photo &amp; Signature Extractor</h2>
+      <p class="what">Pull your photo and signature out of a scanned form or document.</p>
+      <dl>
+        <dt>You give</dt><dd>One image of the document</dd>
+        <dt>You get</dt><dd>A clean photo and signature as separate files, compressed to a size limit for online forms</dd>
+      </dl>
+      <div class="open"><span>Open tool</span><span>→</span></div>
+    </a>
+
+    <a class="card" href="passport-photo.html">
+      <div class="top"><span class="mono num">03</span><span class="mono chip">Capture</span></div>
+      <h2>Passport Photo Maker</h2>
+      <p class="what">Take a passport photo with your camera and change its background colour.</p>
+      <dl>
+        <dt>You give</dt><dd>A live camera shot or any photo of a person</dd>
+        <dt>You get</dt><dd>A cropped 35 × 45 mm photo on white, blue or any colour, saved at your chosen KB size, plus a 4×6 print sheet</dd>
+      </dl>
+      <div class="open"><span>Open tool</span><span>→</span></div>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  <div class="in">Created By Rishabh Choudhary</div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14161b">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📷</text></svg>">
+<title>Passport Photo Maker</title>
+<style>
+:root{--bg:#14161b;--panel:#1c1f26;--line:#2d313a;--ink:#f1efe9;--dim:#9aa0ab;--acc:#e0472b;--mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,select,input{font:inherit;color:inherit}
+.hide{display:none!important}
+.mono,.eyebrow,.lab,.chip{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em}
+.back{font:12px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);text-decoration:none}
+.eyebrow{color:var(--acc);font-size:13px}
+#cam{position:fixed;inset:0;background:#000}
+#video{width:100%;height:100%;object-fit:cover}
+#video.mirror{transform:scaleX(-1)}
+#guide{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);height:min(62vh,calc(86vw*1.2857));aspect-ratio:35/45;pointer-events:none;box-shadow:0 0 0 100vmax rgba(0,0,0,.42);--c:#fff;transition:box-shadow .2s}
+#guide::before{content:"";position:absolute;inset:0;background:
+ linear-gradient(var(--c),var(--c)) top left/34px 4px,linear-gradient(var(--c),var(--c)) top left/4px 34px,
+ linear-gradient(var(--c),var(--c)) top right/34px 4px,linear-gradient(var(--c),var(--c)) top right/4px 34px,
+ linear-gradient(var(--c),var(--c)) bottom left/34px 4px,linear-gradient(var(--c),var(--c)) bottom left/4px 34px,
+ linear-gradient(var(--c),var(--c)) bottom right/34px 4px,linear-gradient(var(--c),var(--c)) bottom right/4px 34px;background-repeat:no-repeat}
+#guide.ok{--c:var(--acc);box-shadow:0 0 0 100vmax rgba(0,0,0,.3)}
+#allow{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);z-index:3}
+#native{position:absolute;left:50%;bottom:215px;transform:translateX(-50%);z-index:3;white-space:nowrap}
+#status{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:50%;transform:translateX(-50%);background:rgba(20,22,27,.88);border:1px solid var(--line);padding:8px 14px;border-radius:4px;font:13px var(--mono);text-transform:uppercase;letter-spacing:.1em;text-align:center;max-width:92vw;z-index:2}
+#bar{position:absolute;bottom:0;left:0;right:0;padding:18px 24px calc(env(safe-area-inset-bottom,0px) + 22px);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(transparent,rgba(0,0,0,.75))}
+.ic{width:52px;height:52px;border-radius:4px;border:1px solid var(--line);background:rgba(28,31,38,.9);font-size:22px;display:grid;place-items:center;cursor:pointer}
+#shutter{width:76px;height:76px;border-radius:50%;border:4px solid #fff;background:var(--acc);cursor:pointer;padding:0}
+#auto{position:absolute;top:calc(env(safe-area-inset-top,0px) + 118px);left:50%;transform:translateX(-50%);font:12px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:#ddd;display:flex;gap:8px;align-items:center;white-space:nowrap}
+input[type=checkbox]{accent-color:var(--acc);width:18px;height:18px}
+#count{position:absolute;inset:0;display:grid;place-items:center;font-size:110px;font-weight:700;text-shadow:0 2px 20px #000;pointer-events:none}
+#res{position:fixed;inset:0;overflow:auto;padding:0 0 calc(env(safe-area-inset-bottom,0px) + 8px)}
+.wrap{max-width:560px;margin:0 auto;display:grid;gap:18px;padding:0 20px}
+header{padding:28px 0 22px;border-bottom:1px solid var(--line);margin:0 -20px;padding-left:20px;padding-right:20px;display:grid;gap:10px}
+h1{font-size:40px;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+.lede{color:var(--dim);font-size:17px}
+.panel{position:relative;background:var(--panel);border:1px solid var(--line);padding:22px 20px;display:grid;gap:14px;margin-top:6px}
+.panel::before{content:"";position:absolute;inset:-2px;pointer-events:none;background:
+ linear-gradient(var(--acc),var(--acc)) top left/24px 3px,linear-gradient(var(--acc),var(--acc)) top left/3px 24px,
+ linear-gradient(var(--acc),var(--acc)) top right/24px 3px,linear-gradient(var(--acc),var(--acc)) top right/3px 24px,
+ linear-gradient(var(--acc),var(--acc)) bottom left/24px 3px,linear-gradient(var(--acc),var(--acc)) bottom left/3px 24px,
+ linear-gradient(var(--acc),var(--acc)) bottom right/24px 3px,linear-gradient(var(--acc),var(--acc)) bottom right/3px 24px;background-repeat:no-repeat}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.chip{border:1px solid var(--line);padding:6px 12px;font-size:12px;color:var(--dim);border-radius:3px}
+#preview{display:grid;place-items:center;border:1px dashed #3a3f4a;padding:16px;background:repeating-conic-gradient(#20232a 0 25%,#1a1d23 0 50%) 0 0/18px 18px}
+#out{max-width:100%;max-height:50vh;box-shadow:0 6px 28px rgba(0,0,0,.55)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.lab{font-size:12px;color:var(--dim);width:100%}
+.sw{width:44px;height:44px;border-radius:4px;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw.on{border-color:var(--acc);outline:2px solid var(--acc);outline-offset:2px}
+input[type=color]{width:44px;height:44px;border:1px solid var(--line);border-radius:4px;background:none;padding:2px}
+select,input[type=number]{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:11px;min-width:0}
+input[type=number]{width:90px}
+input[type=range]{flex:1;min-width:120px;accent-color:var(--acc)}
+.btn{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:13px 16px;cursor:pointer}
+.btn.pri{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+.grow{flex:1}
+#info{font:13px var(--mono);color:var(--dim)}
+footer{border-top:1px solid var(--line);margin:8px -20px 0;padding:18px 20px;font:12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+#load{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;text-align:center;padding:24px;z-index:9}
+</style>
+</head>
+<body>
+<div id="load"><div><p class="eyebrow">Local · Offline · Nothing uploaded anywhere</p><p id="loadmsg" style="margin-top:12px;font-size:20px;font-weight:600">Loading face and background models…</p><p style="color:var(--dim);font-size:14px;margin-top:8px">First load needs internet. After that it works offline.</p></div></div>
+
+<section id="cam">
+  <video id="video" playsinline muted autoplay></video>
+  <div id="guide"></div>
+  <div id="status">Starting camera…</div>
+  <button id="allow" class="btn pri hide">Allow camera</button>
+  <button id="native" class="btn hide">Use phone camera app</button>
+  <input type="file" id="file2" accept="image/*" capture="user" hidden>
+  <label id="auto"><input type="checkbox" id="autoCb" checked> Auto capture</label>
+  <div id="count" class="hide"></div>
+  <div id="bar">
+    <label class="ic" title="Upload photo">🖼<input type="file" id="file" accept="image/*" hidden></label>
+    <button class="ic" id="shutter" aria-label="Capture"></button>
+    <button class="ic" id="flip" title="Switch camera">⟲</button>
+  </div>
+</section>
+
+<section id="res" class="hide">
+  <div class="wrap">
+    <header>
+      <a class="back" href="index.html">← All tools</a>
+      <p class="eyebrow">Local · Offline · Nothing uploaded anywhere</p>
+      <h1>Passport Photo Maker</h1>
+      <p class="lede">Your photo is centred, cut out and cropped to passport size on any background colour you pick. Save it at full size or under a KB limit.</p>
+    </header>
+    <div class="panel">
+      <div class="ph"><span class="lab" style="width:auto">Photo</span><span class="chip" id="chip">Ready</span></div>
+      <div id="preview"><canvas id="out"></canvas></div>
+      <div id="info"></div>
+    </div>
+    <div class="panel">
+      <div class="row"><span class="lab">Background colour</span>
+        <span id="sws" class="row"></span><input type="color" id="bgc" value="#ffffff" aria-label="Custom colour">
+      </div>
+      <div class="row"><span class="lab">Photo size</span>
+        <select id="size" class="grow">
+          <option value="35,45">India / UK / EU: 35 × 45 mm</option>
+          <option value="51,51">USA: 2 × 2 inch (51 × 51 mm)</option>
+          <option value="33,48">China visa: 33 × 48 mm</option>
+          <option value="25,35">Small: 25 × 35 mm</option>
+          <option value="custom">Custom (mm)</option>
+        </select>
+        <span id="cust" class="row hide"><input type="number" id="cw" value="35" min="10" max="100"> × <input type="number" id="ch" value="45" min="10" max="100"></span>
+      </div>
+      <div class="row"><span class="lab">Light</span>
+        <label class="row" style="gap:8px"><input type="checkbox" id="autoL" checked> Auto</label>
+        <input type="range" id="br" min="-30" max="30" value="0" aria-label="Brightness">
+        <input type="range" id="ct" min="-30" max="30" value="0" aria-label="Contrast">
+      </div>
+    </div>
+    <div class="panel">
+      <div class="row"><span class="lab">Save</span>
+        <button class="btn pri grow" id="saveO">Original size</button>
+        <input type="number" id="kb" value="50" min="5" max="2000" aria-label="Target KB"><span class="mono">KB</span>
+        <button class="btn grow" id="saveK">Save under KB</button>
+      </div>
+      <div class="row">
+        <button class="btn grow" id="sheet">Print sheet 4×6 in</button>
+        <button class="btn grow" id="retake">Retake</button>
+      </div>
+    </div>
+    <footer>Created By Rishabh Choudhary</footer>
+  </div>
+</section>
+
+<script>
+let FilesetResolver,FaceDetector,ImageSegmenter;
+const $=id=>document.getElementById(id);
+const WASM="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
+const GS="https://storage.googleapis.com/mediapipe-models/";
+const M={face:[GS+"face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite"],
+         seg:[GS+"image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite"]};
+let face,seg,stream,facing="user",view="cam",S=null,bg="#ffffff";
+
+async function make(cls,paths,extra){
+  for(const path of paths) for(const delegate of ["GPU","CPU"]){
+    try{return await cls.createFromOptions(fs,{baseOptions:{modelAssetPath:path,delegate},runningMode:"IMAGE",...extra});}catch(e){}
+  }
+  throw new Error("model");
+}
+let fs;
+(async()=>{
+  try{
+    ({FilesetResolver,FaceDetector,ImageSegmenter}=await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs"));
+    fs=await FilesetResolver.forVisionTasks(WASM);
+    face=await make(FaceDetector,M.face,{minDetectionConfidence:.6});
+    seg=await make(ImageSegmenter,M.seg,{outputConfidenceMasks:true,outputCategoryMask:false});
+    $("load").classList.add("hide");
+  }catch(e){$("loadmsg").textContent="Could not load models. Check your internet connection and reload."}
+})();
+
+// ---------- camera ----------
+async function startCam(){
+  stopCam();$("allow").classList.add("hide");$("native").classList.add("hide");
+  if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    $("status").textContent="Camera works only on an https link. Open the GitHub Pages address, not a saved file";
+    $("native").classList.remove("hide");return}
+  $("status").textContent="Allow camera access when asked";
+  try{
+    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:1280},height:{ideal:1280}},audio:false})}
+    catch(e){if(e.name==="NotAllowedError"||e.name==="SecurityError")throw e;stream=await navigator.mediaDevices.getUserMedia({video:true,audio:false})}
+    const v=$("video");v.srcObject=stream;v.classList.toggle("mirror",facing==="user");v.play().catch(()=>{});
+    $("status").textContent="Fit your face inside the frame";
+    if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+  }catch(e){
+    $("status").textContent=e.name==="NotAllowedError"?"Camera blocked. Tap Allow, or enable Camera in site settings":"No camera found. Upload a photo instead";
+    $("allow").classList.remove("hide");$("native").classList.remove("hide");
+  }
+}
+$("allow").onclick=startCam;
+if(navigator.permissions&&navigator.permissions.query)navigator.permissions.query({name:"camera"}).then(p=>{p.onchange=()=>{if(p.state==="granted"&&view==="cam"&&!stream)startCam()}}).catch(()=>{});
+function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}}
+$("flip").onclick=()=>{facing=facing==="user"?"environment":"user";startCam()};
+$("shutter").onclick=()=>capture();
+const onFile=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  const bmp=await createImageBitmap(f,{imageOrientation:"from-image"});
+  process(toCanvas(bmp,bmp.width,bmp.height));e.target.value="";
+};
+$("file").onchange=onFile;$("file2").onchange=onFile;$("native").onclick=()=>$("file2").click();
+function toCanvas(src,w,h,max=1600){
+  const k=Math.min(1,max/Math.max(w,h)),c=document.createElement("canvas");
+  c.width=Math.round(w*k);c.height=Math.round(h*k);c.getContext("2d").drawImage(src,0,0,c.width,c.height);return c;
+}
+function capture(){
+  const v=$("video");if(!v.videoWidth)return;
+  process(toCanvas(v,v.videoWidth,v.videoHeight));
+}
+
+// auto capture
+let last=0,okSince=0,prev=null,counting=false;
+function loop(t){
+  if(view==="cam"&&face&&!counting&&$("video").readyState>=2&&t-last>200){
+    last=t;check();
+  }
+  requestAnimationFrame(loop);
+}
+function check(){
+  const v=$("video"),vw=v.videoWidth,vh=v.videoHeight;if(!vw)return;
+  let d;try{d=face.detect(v).detections[0]}catch(e){return}
+  const g=$("guide"),st=$("status");
+  if(!d){g.classList.remove("ok");st.textContent="No face found";okSince=0;prev=null;return}
+  const b=d.boundingBox,cx=(b.originX+b.width/2)/vw,cy=(b.originY+b.height/2)/vh,r=b.height/vh;
+  let msg="";
+  if(r<.2)msg="Come closer";else if(r>.42)msg="Move back";
+  else if(Math.abs(cx-.5)>.1||Math.abs(cy-.44)>.12)msg="Center your face in the frame";
+  const still=prev?Math.hypot(cx-prev.x,cy-prev.y)<.025:false;prev={x:cx,y:cy};
+  if(msg){g.classList.remove("ok");st.textContent=msg;okSince=0;return}
+  g.classList.add("ok");st.textContent=still?"Hold still…":"Good position";
+  if(!still){okSince=0;return}
+  if(!okSince)okSince=performance.now();
+  if(performance.now()-okSince>900&&$("autoCb").checked)countdown();
+}
+async function countdown(){
+  counting=true;const c=$("count");c.classList.remove("hide");
+  for(const n of [3,2,1]){c.textContent=n;await new Promise(r=>setTimeout(r,700))}
+  c.classList.add("hide");counting=false;okSince=0;capture();
+}
+requestAnimationFrame(loop);
+
+// ---------- processing ----------
+function show(v){view=v;$("cam").classList.toggle("hide",v!=="cam");$("res").classList.toggle("hide",v!=="res")}
+function process(src){
+  if(!face||!seg){$("status").textContent="Models still loading…";return}
+  $("status").textContent="Processing…";
+  setTimeout(()=>{
+    let d;try{d=face.detect(src).detections}catch(e){d=[]}
+    if(!d.length){$("status").textContent="No face found. Try again.";return}
+    d.sort((a,b)=>b.boundingBox.width-a.boundingBox.width);
+    const b=d[0].boundingBox;
+    let res;try{res=seg.segment(src)}catch(e){$("status").textContent="Background removal failed.";return}
+    const ms=res.confidenceMasks,m=ms.length>1?ms[1]:ms[0];
+    const w=m.width,h=m.height,f=m.getAsFloat32Array();
+    const mc=document.createElement("canvas");mc.width=w;mc.height=h;
+    const mctx=mc.getContext("2d"),id=mctx.createImageData(w,h);
+    for(let i=0;i<f.length;i++){const a=Math.min(1,Math.max(0,(f[i]-.35)/.3));id.data[i*4+3]=a*255}
+    mctx.putImageData(id,0,0);
+    res.close&&res.close();
+    S={src,mask:mc,face:{cx:b.originX+b.width/2,cy:b.originY+b.height/2,h:b.height}};
+    stopCam();show("res");render();
+  },30);
+}
+function sizePx(){
+  let [mw,mh]=$("size").value==="custom"?[+$("cw").value||35,+$("ch").value||45]:$("size").value.split(",").map(Number);
+  return [Math.round(mw/25.4*300),Math.round(mh/25.4*300)];
+}
+function render(){
+  if(!S)return;
+  const [w,h]=sizePx(),{cx,cy,h:fh}=S.face;
+  const H=fh*1.84,W=H*w/h,sx=cx-W/2,sy=cy-.9*fh-.08*H;
+  const pc=document.createElement("canvas");pc.width=w;pc.height=h;
+  const p=pc.getContext("2d",{willReadFrequently:true});
+  p.drawImage(S.src,sx,sy,W,H,0,0,w,h);
+  // cut the person out using the mask, cropped identically
+  const k=S.src.width/S.mask.width;
+  p.globalCompositeOperation="destination-in";
+  p.drawImage(S.mask,sx/k,sy/k,W/k,H/k,0,0,w,h);
+  p.globalCompositeOperation="source-over";
+  adjust(p,w,h);
+  const o=$("out");o.width=w;o.height=h;
+  const c=o.getContext("2d");c.fillStyle=bg;c.fillRect(0,0,w,h);c.drawImage(pc,0,0);
+  $("info").textContent=`${w} × ${h} px at 300 DPI`;$("chip").textContent=`${w} × ${h} px`;
+}
+function adjust(ctx,w,h){
+  const im=ctx.getImageData(0,0,w,h),d=im.data,hist=new Uint32Array(256);let n=0,sum=0;
+  for(let i=0;i<d.length;i+=4)if(d[i+3]>200){const l=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)|0;hist[l]++;n++}
+  let lo=0,hi=255,gam=1;
+  if($("autoL").checked&&n>100){
+    let a=0;for(lo=0;lo<255&&a<n*.01;lo++)a+=hist[lo];
+    a=0;for(hi=255;hi>0&&a<n*.01;hi--)a+=hist[hi];
+    if(hi-lo<60){lo=0;hi=255}
+    for(let i=lo;i<=hi;i++)sum+=hist[i]*((i-lo)/(hi-lo));
+    const mean=Math.min(.8,Math.max(.2,sum/n));
+    gam=Math.min(1.5,Math.max(.7,Math.log(.5)/Math.log(mean)));
+  }
+  const b=+$("br").value/100,c=1+ +$("ct").value/100,lut=new Uint8ClampedArray(256);
+  for(let i=0;i<256;i++){
+    let v=Math.min(1,Math.max(0,(i-lo)/(hi-lo||1)));v=Math.pow(v,gam);
+    v=(v-.5)*c+.5+b;lut[i]=v*255;
+  }
+  for(let i=0;i<d.length;i+=4){d[i]=lut[d[i]];d[i+1]=lut[d[i+1]];d[i+2]=lut[d[i+2]]}
+  ctx.putImageData(im,0,0);
+}
+
+// ---------- controls ----------
+const COLORS=["#ffffff","#2a6fdb","#d9262c","#dfe3e8"];
+COLORS.forEach(c=>{const b=document.createElement("button");b.className="sw"+(c===bg?" on":"");b.style.background=c;b.setAttribute("aria-label",c);
+  b.onclick=()=>setBg(c);$("sws").appendChild(b)});
+function setBg(c){bg=c;$("bgc").value=c;[...$("sws").children].forEach(b=>b.classList.toggle("on",b.style.background&&rgb(b.style.background)===c));render()}
+function rgb(s){const m=s.match(/\d+/g);return m?"#"+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,"0")).join(""):s}
+$("bgc").oninput=e=>setBg(e.target.value);
+$("size").onchange=()=>{$("cust").classList.toggle("hide",$("size").value!=="custom");render()};
+["cw","ch","autoL","br","ct"].forEach(i=>$(i).addEventListener("input",render));
+$("retake").onclick=()=>{S=null;show("cam");$("status").textContent="Fit your face inside the frame";startCam()};
+
+function blob(c,q){return new Promise(r=>c.toBlob(r,"image/jpeg",q))}
+async function saveFile(b,name){
+  if(window.showSaveFilePicker){
+    try{const f=await showSaveFilePicker({suggestedName:name,types:[{description:"JPEG image",accept:{"image/jpeg":[".jpg"]}}]});
+      const w=await f.createWritable();await w.write(b);await w.close();return}
+    catch(e){if(e.name==="AbortError")return}
+  }
+  save(b,name);
+}
+function save(b,name){const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+$("saveO").onclick=async()=>{const b=await blob($("out"),.95);await saveFile(b,"passport-photo.jpg");$("info").textContent=`Saved ${(b.size/1024).toFixed(0)} KB`};
+$("saveK").onclick=async()=>{
+  const target=(+$("kb").value||50)*1024,src=$("out");let best=null,s=1;
+  while(!best&&s>.15){
+    let c=src;if(s<1){c=document.createElement("canvas");c.width=Math.round(src.width*s);c.height=Math.round(src.height*s);c.getContext("2d").drawImage(src,0,0,c.width,c.height)}
+    let lo=.05,hi=.95;
+    for(let i=0;i<8;i++){const q=(lo+hi)/2,b=await blob(c,q);if(b.size<=target){best=b;lo=q}else hi=q}
+    s*=.9;
+  }
+  if(!best){$("info").textContent="Target too small. Try a larger KB value.";return}
+  await saveFile(best,"passport-photo-"+Math.round(best.size/1024)+"kb.jpg");$("info").textContent=`Saved ${(best.size/1024).toFixed(1)} KB`;
+};
+$("sheet").onclick=async()=>{
+  const p=$("out"),W=1200,H=1800,g=24,m=36,c=document.createElement("canvas");c.width=W;c.height=H;
+  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,W,H);
+  let px=m,py=m;
+  while(py+p.height<=H-m){
+    if(px+p.width>W-m){px=m;py+=p.height+g;continue}
+    if(py+p.height>H-m)break;
+    x.drawImage(p,px,py);x.strokeStyle="#bbb";x.lineWidth=1;x.strokeRect(px,py,p.width,p.height);px+=p.width+g;
+  }
+  await saveFile(await blob(c,.95),"passport-sheet-4x6.jpg");
+};
+
+startCam();
+</script>
+</body>
+</html>
