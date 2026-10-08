@@ -117,6 +117,9 @@ footer{border-top:1px solid var(--line);margin:8px -20px 0;padding:18px 20px;fon
         <input type="range" id="ct" min="-30" max="30" value="0" aria-label="Contrast">
       </div>
       <div class="row"><span class="lab">Edge cleanup</span><input type="range" id="ed" min="-10" max="10" value="0" aria-label="Edge cleanup"></div>
+     <div class="row"><span class="lab">Crop: zoom</span><input type="range" id="zm" min="70" max="160" value="100"></div>
+      <div class="row"><span class="lab">Crop: move photo left / right</span><input type="range" id="mx" min="-50" max="50" value="0"></div>
+      <div class="row"><span class="lab">Crop: move photo up / down</span><input type="range" id="my" min="-50" max="50" value="0"></div>
     </div>
     <div class="panel">
       <div class="row"><span class="lab">Save</span>
@@ -272,12 +275,16 @@ function process(src){
   $("status").textContent="Processing…";
   setTimeout(()=>{
     let d;try{d=face.detect(src).detections}catch(e){d=[]}
-    if(!d.length){$("status").textContent="No face found. Try again.";return}
-    d.sort((a,b)=>b.boundingBox.width-a.boundingBox.width);
-    const b=d[0].boundingBox;
-    const F={cx:b.originX+b.width/2,cy:b.originY+b.height/2,h:b.height};
+    let F;
+    if(d.length){
+      d.sort((a,b)=>b.boundingBox.width-a.boundingBox.width);
+      const b=d[0].boundingBox;
+      F={cx:b.originX+b.width/2,cy:b.originY+b.height/2,h:b.height};
+    }else{
+      F={cx:src.width/2,cy:src.height*.4826,h:src.height*.337};
+    }
     // segment only the head-and-shoulders area so the model sees more detail
-    const HH=F.h*1.84,pad=.07*HH;
+    const HH=F.h*1.84,pad=.25*HH;
     const rx=Math.max(0,Math.floor(F.cx-.5*HH-pad)),ry=Math.max(0,Math.floor(F.cy-.9*F.h-.08*HH-pad));
     const rr=Math.min(src.width,Math.ceil(F.cx+.5*HH+pad)),rb=Math.min(src.height,Math.ceil(ry+HH+2*pad));
     const rw=Math.max(1,rr-rx),rh=Math.max(1,rb-ry),k=Math.min(1,900/Math.max(rw,rh));
@@ -292,7 +299,7 @@ function process(src){
     const q=guided(I,f,mw,mh,Math.max(4,Math.round(Math.min(mw,mh)*.012)),.004);
     res.close&&res.close();
     S={src,face:F,m:{x:rx,y:ry,sc:mw/rw,w:mw,h:mh,q,t:null,canvas:document.createElement("canvas")}};
-    $("ed").value=0;
+    $("ed").value=0;$("zm").value=100;$("mx").value=0;$("my").value=0;;
     stopCam();show("res");render();
   },30);
 }
@@ -303,7 +310,9 @@ function sizePx(){
 function render(){
   if(!S)return;
   const [w,h]=sizePx(),{cx,cy,h:fh}=S.face;
-  const H=fh*1.84,W=H*w/h,sx=cx-W/2,sy=cy-.9*fh-.08*H;
+  const z=(+$("zm").value)/100,H0=fh*1.84,W0=H0*w/h,H=H0/z,W=W0/z;
+  const ccy=cy-.9*fh-.08*H0+H0/2;
+  const sx=cx-W/2-(+$("mx").value)/100*W,sy=ccy-H/2-(+$("my").value)/100*H;
   const pc=document.createElement("canvas");pc.width=w;pc.height=h;
   const p=pc.getContext("2d",{willReadFrequently:true});
   p.drawImage(S.src,sx,sy,W,H,0,0,w,h);
@@ -346,7 +355,7 @@ function setBg(c){bg=c;$("bgc").value=c;[...$("sws").children].forEach(b=>b.clas
 function rgb(s){const m=s.match(/\d+/g);return m?"#"+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,"0")).join(""):s}
 $("bgc").oninput=e=>setBg(e.target.value);
 $("size").onchange=()=>{$("cust").classList.toggle("hide",$("size").value!=="custom");render()};
-["cw","ch","autoL","br","ct","ed"].forEach(i=>$(i).addEventListener("input",render));
+["cw","ch","autoL","br","ct","ed","zm","mx","my"].forEach(i=>$(i).addEventListener("input",render));
 $("retake").onclick=()=>{S=null;show("cam");$("status").textContent="Fit your face inside the frame";startCam()};
 
 function blob(c,q){return new Promise(r=>c.toBlob(r,"image/jpeg",q))}
