@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#14161b">
+<title>Document & Photo Utilities</title>
+<style>
+:root{--bg:#14161b;--panel:#1c1f26;--line:#2d313a;--ink:#f1efe9;--dim:#8d93a0;--acc:#e0472b;--mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.eyebrow,.mono{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em}
+.eyebrow{color:var(--acc);font-size:13px}
+.in{max-width:640px;margin:0 auto}
+header{border-bottom:1px solid var(--line);padding:36px 20px 28px}
+h1{font-size:clamp(30px,8vw,42px);line-height:1.1;font-weight:700;letter-spacing:-.01em;margin:10px 0}
+.lede{color:var(--dim);font-size:17px}
+main{flex:1;padding:32px 20px}
+.grid{display:grid;gap:28px}
+
+/* card */
+.card{position:relative;display:grid;gap:14px;background:var(--panel);border:1px solid var(--line);padding:22px 20px;color:inherit;text-decoration:none;transition:background .15s}
+.card::before{content:"";position:absolute;inset:-2px;pointer-events:none;background:
+ linear-gradient(var(--acc),var(--acc)) top left/24px 3px,linear-gradient(var(--acc),var(--acc)) top left/3px 24px,
+ linear-gradient(var(--acc),var(--acc)) top right/24px 3px,linear-gradient(var(--acc),var(--acc)) top right/3px 24px,
+ linear-gradient(var(--acc),var(--acc)) bottom left/24px 3px,linear-gradient(var(--acc),var(--acc)) bottom left/3px 24px,
+ linear-gradient(var(--acc),var(--acc)) bottom right/24px 3px,linear-gradient(var(--acc),var(--acc)) bottom right/3px 24px;background-repeat:no-repeat}
+.card:hover,.card:focus-visible{background:#21252d;outline:none}
+.top{display:flex;justify-content:space-between;align-items:center}
+.num{font-size:12px;color:var(--dim)}
+.chip{font-size:12px;color:var(--dim);border:1px solid var(--line);padding:5px 10px;border-radius:3px}
+h2{font-size:22px;font-weight:700;line-height:1.25}
+.what{color:var(--dim);font-size:16px;margin-top:-6px}
+.open{font:13px var(--mono);letter-spacing:.14em;text-transform:uppercase;display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:14px}
+.card:hover .open span:last-child{color:var(--acc)}
+
+/* animated stage */
+.stage{position:relative;height:196px;background:#101216;border:1px dashed #3a3f4a;overflow:hidden}
+.steps{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.steps li{border-top:2px solid var(--line);padding-top:7px;font-size:12.5px;line-height:1.3;color:var(--dim);animation:lit var(--d) linear infinite}
+.steps li:nth-child(2){animation-delay:calc(var(--d)/3)}
+.steps li:nth-child(3){animation-delay:calc(var(--d)*2/3)}
+.steps b{display:block;font:11px var(--mono);letter-spacing:.12em;margin-bottom:2px}
+@keyframes lit{0%,31%{color:var(--ink);border-color:var(--acc)}34%,100%{color:var(--dim);border-color:var(--line)}}
+
+/* shared mini pieces */
+.face{background:
+ radial-gradient(ellipse 20% 15.6% at 50% 36%,#d9b08c 0 99%,transparent 100%),
+ radial-gradient(ellipse 46% 26% at 50% 100%,#56627f 0 99%,transparent 100%)}
+
+/* 1 · ID card */
+.sheet{position:absolute;left:50%;top:50%;width:112px;height:162px;margin:-81px 0 0 -56px;background:#f4f1ea;box-shadow:0 6px 20px rgba(0,0,0,.55)}
+.sheet small{position:absolute;bottom:4px;right:6px;font:9px var(--mono);color:#8a8578;letter-spacing:.1em}
+.cd{position:absolute;left:15px;width:82px;height:52px;border-radius:5px;
+ background:radial-gradient(circle 8px at 20% 45%,#8a7a62 0 99%,transparent 100%),
+ linear-gradient(#a79d86,#a79d86) 48% 28%/30px 3px no-repeat,linear-gradient(#a79d86,#a79d86) 48% 50%/24px 3px no-repeat,linear-gradient(#a79d86,#a79d86) 48% 72%/34px 3px no-repeat,
+ linear-gradient(135deg,#e6dfcc,#cfc6ae);box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.cd.a{top:30px;animation:c1 7s ease-in-out infinite}
+.cd.b{top:94px;animation:c2 7s ease-in-out infinite}
+.cut{position:absolute;left:12px;width:88px;height:58px;border:1px dashed var(--acc);animation:cut 7s infinite}
+.cut.a{top:27px}.cut.b{top:91px}
+@keyframes c1{0%{transform:translate(-120px,-18px) rotate(-17deg) skewY(5deg);opacity:0}8%,28%{transform:translate(-120px,-18px) rotate(-17deg) skewY(5deg);opacity:1;box-shadow:0 0 0 2px var(--acc)}52%,88%{transform:none;opacity:1;box-shadow:0 1px 4px rgba(0,0,0,.35)}96%,100%{transform:none;opacity:0}}
+@keyframes c2{0%{transform:translate(120px,8px) rotate(15deg) skewY(-5deg);opacity:0}8%,28%{transform:translate(120px,8px) rotate(15deg) skewY(-5deg);opacity:1;box-shadow:0 0 0 2px var(--acc)}52%,88%{transform:none;opacity:1;box-shadow:0 1px 4px rgba(0,0,0,.35)}96%,100%{transform:none;opacity:0}}
+@keyframes cut{0%,56%{opacity:0}64%,88%{opacity:1}96%,100%{opacity:0}}
+
+/* 2 · extractor */
+.doc{position:absolute;left:16px;top:50%;width:132px;height:150px;margin-top:-75px;background:#f4f1ea;box-shadow:0 6px 20px rgba(0,0,0,.55)}
+.doc .ph{position:absolute;left:12px;top:14px;width:34px;height:42px;background-color:#cfd6df}
+.doc .tx{position:absolute;left:54px;top:16px;width:66px;height:40px;background:
+ linear-gradient(#c9c4b6,#c9c4b6) 0 0/100% 4px no-repeat,linear-gradient(#c9c4b6,#c9c4b6) 0 14px/80% 4px no-repeat,linear-gradient(#c9c4b6,#c9c4b6) 0 28px/92% 4px no-repeat}
+.doc .ln{position:absolute;left:12px;top:68px;width:108px;height:20px;background:
+ linear-gradient(#d6d1c3,#d6d1c3) 0 0/100% 3px no-repeat,linear-gradient(#d6d1c3,#d6d1c3) 0 10px/70% 3px no-repeat}
+.doc svg,.o2 svg{position:absolute;overflow:visible}
+.doc svg{left:12px;top:100px;width:84px;height:30px}
+.sel{position:absolute;border:2px solid var(--acc);animation:sel 7s ease-in-out infinite}
+.sel.p{left:8px;top:10px;width:42px;height:50px}
+.sel.s{left:7px;top:94px;width:94px;height:42px}
+.o1,.o2{position:absolute;right:14px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;animation:out 7s ease-in-out infinite}
+.o1{top:22px}.o2{top:116px}
+.o1 .ph{width:36px;height:44px;background-color:#cfd6df}
+.o2 .sg{position:relative;width:70px;height:30px;background:#f4f1ea}
+.o2 .sg svg{left:4px;top:2px;width:62px;height:26px}
+.kb{font:11px var(--mono);color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:3px 6px;border-radius:3px;white-space:nowrap}
+@keyframes sel{0%,26%{opacity:0;transform:scale(1.25)}36%,72%{opacity:1;transform:none}92%,100%{opacity:0}}
+@keyframes out{0%,56%{opacity:0;transform:translateX(-60px)}70%,92%{opacity:1;transform:none}98%,100%{opacity:0}}
+
+/* 3 · passport */
+.pp{position:absolute;left:50%;top:50%;width:112px;height:144px;margin:-72px 0 0 -56px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.55)}
+.pp>*{position:absolute;inset:0}
+.pat{background:repeating-linear-gradient(45deg,#6d4271 0 9px,#b99bbb 9px 18px);animation:pat 8s infinite}
+.sol{background:#fff;animation:sol 8s infinite}
+.pers{animation:pers 8s ease-in-out infinite}
+.br{--c:#fff;background:
+ linear-gradient(var(--c),var(--c)) top left/18px 3px,linear-gradient(var(--c),var(--c)) top left/3px 18px,
+ linear-gradient(var(--c),var(--c)) top right/18px 3px,linear-gradient(var(--c),var(--c)) top right/3px 18px,
+ linear-gradient(var(--c),var(--c)) bottom left/18px 3px,linear-gradient(var(--c),var(--c)) bottom left/3px 18px,
+ linear-gradient(var(--c),var(--c)) bottom right/18px 3px,linear-gradient(var(--c),var(--c)) bottom right/3px 18px;background-repeat:no-repeat;animation:brw 8s infinite}
+.br.on{--c:var(--acc);animation:bro 8s infinite;opacity:0}
+.fl{background:#fff;opacity:0;animation:fl 8s infinite}
+.kb.side{position:absolute;font-size:10px;animation:chip 8s ease-in-out infinite}
+.side.l{left:8px;top:18px}.side.r{right:8px;bottom:18px}
+@keyframes pat{0%,30%{opacity:1}34%,92%{opacity:0}100%{opacity:1}}
+@keyframes sol{0%,31%{opacity:0;background:#fff}34%,52%{opacity:1;background:#fff}57%,70%{background:#2a6fdb}75%,88%{background:#d9262c}93%{opacity:1;background:#fff}100%{opacity:0;background:#fff}}
+@keyframes pers{0%{transform:scale(1.3) translateY(10%)}22%,100%{transform:none}}
+@keyframes brw{0%,18%{opacity:1}24%,100%{opacity:0}}
+@keyframes bro{0%,18%{opacity:0}24%,34%{opacity:1}38%,100%{opacity:0}}
+@keyframes fl{0%,31%{opacity:0}33%{opacity:.9}40%,100%{opacity:0}}
+@keyframes chip{0%,64%{opacity:0;transform:translateY(6px)}74%,92%{opacity:1;transform:none}98%,100%{opacity:0}}
+
+footer{border-top:1px solid var(--line);padding:18px 20px;font:12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}.steps li:first-child{color:var(--ink);border-color:var(--acc)}.br.on,.fl,.pat{opacity:0}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="in">
+    <p class="eyebrow">Local · Offline · Nothing uploaded anywhere</p>
+    <h1>Document &amp; Photo Utilities</h1>
+    <p class="lede">Simple tools for school and form-filling work. Pick one below. Everything runs in your browser and your files never leave your device.</p>
+  </div>
+</header>
+
+<main>
+  <div class="in grid">
+
+    <!-- 1 -->
+    <a class="card" href="id-card-print-tool.html" style="--d:7s">
+      <div class="top"><span class="mono num">01</span><span class="mono chip">Print</span></div>
+      <h2>ID Card Print Tool</h2>
+      <p class="what">Both sides of an Aadhaar or PAN card on one A4 page.</p>
+      <div class="stage" aria-hidden="true">
+        <div class="sheet">
+          <div class="cut a"></div><div class="cut b"></div>
+          <div class="cd a"></div><div class="cd b"></div>
+          <small>A4</small>
+        </div>
+      </div>
+      <ol class="steps"><li><b>01</b>Add front and back photos</li><li><b>02</b>Auto-straighten and sharpen</li><li><b>03</b>Print on A4, exact size</li></ol>
+      <div class="open"><span>Open tool</span><span>→</span></div>
+    </a>
+
+    <!-- 2 -->
+    <a class="card" href="photo-signature-extractor.html" style="--d:7s">
+      <div class="top"><span class="mono num">02</span><span class="mono chip">Extract</span></div>
+      <h2>Photo &amp; Signature Extractor</h2>
+      <p class="what">Lift your photo and signature out of a scanned form.</p>
+      <div class="stage" aria-hidden="true">
+        <div class="doc">
+          <div class="ph face"></div><div class="tx"></div><div class="ln"></div>
+          <svg viewBox="0 0 84 30" fill="none" stroke="#2a3350" stroke-width="2" stroke-linecap="round"><path d="M2 22C10 4 14 4 12 18c-1 6 6-10 12-8s-6 14 2 10 8-12 14-8-2 12 6 8 10-6 14-4 6 4 14 0"/></svg>
+          <div class="sel p"></div><div class="sel s"></div>
+        </div>
+        <div class="o1"><div class="ph face"></div><span class="kb">photo · 48 KB</span></div>
+        <div class="o2"><div class="sg"><svg viewBox="0 0 84 30" fill="none" stroke="#2a3350" stroke-width="2.4" stroke-linecap="round"><path d="M2 22C10 4 14 4 12 18c-1 6 6-10 12-8s-6 14 2 10 8-12 14-8-2 12 6 8 10-6 14-4 6 4 14 0"/></svg></div><span class="kb">sign · 18 KB</span></div>
+      </div>
+      <ol class="steps"><li><b>01</b>Add a photo of the document</li><li><b>02</b>Photo and signature found</li><li><b>03</b>Save each under a KB limit</li></ol>
+      <div class="open"><span>Open tool</span><span>→</span></div>
+    </a>
+
+    <!-- 3 -->
+    <a class="card" href="passport-photo.html" style="--d:8s">
+      <div class="top"><span class="mono num">03</span><span class="mono chip">Capture</span></div>
+      <h2>Passport Photo Maker</h2>
+      <p class="what">Take a passport photo and swap the background colour.</p>
+      <div class="stage" aria-hidden="true">
+        <div class="pp">
+          <div class="pat"></div><div class="sol"></div><div class="pers face"></div>
+          <div class="br"></div><div class="br on"></div><div class="fl"></div>
+        </div>
+        <span class="kb side l">35 × 45 mm</span><span class="kb side r">≤ 50 KB</span>
+      </div>
+      <ol class="steps"><li><b>01</b>Auto-capture with the camera</li><li><b>02</b>Pick any background colour</li><li><b>03</b>Save at your size in KB</li></ol>
+      <div class="open"><span>Open tool</span><span>→</span></div>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  <div class="in">Created By Rishabh Choudhary</div>
+</footer>
+
+</body>
+</html>
